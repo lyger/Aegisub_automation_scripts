@@ -79,4 +79,4 @@ function validate_clip_shift(sub,sel)
 		sub[sel[1]].text:find("\\clip%(([%d%.%-]*),([%d%.%-]*),([%d%.%-]*),([%d%.%-]*)%)")~=nil
 end
 
-aegisub.register_macro(script_name,script_description,clip_shift)
+aegisub.register_macro(script_name,script_description,clip_shift,validate_clip_shift)
