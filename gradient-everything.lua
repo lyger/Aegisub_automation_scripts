@@ -583,7 +583,7 @@ local function get_pos(line)
 					elseif align_dumb>4 then
 						posy=line.eff_margin_t
 					else
-						posy=line.eff_margin_b
+						posy=vid_y-line.eff_margin_b
 					end
 					_temp=align_dumb%4
 					if _temp==1 then
@@ -591,7 +591,7 @@ local function get_pos(line)
 					elseif _temp==2 then
 						posx=line.eff_margin_l+(vid_x-line.eff_margin_l-line.eff_margin_r)/2
 					else
-						posx=line.eff_margin_r
+						posx=vid_x-line.eff_margin_r
 					end
 				end
 			else
@@ -604,14 +604,14 @@ local function get_pos(line)
 				elseif align_n>3 then
 					posy=vid_y/2
 				else
-					posy=line.eff_margin_b
+					posy=vid_y-line.eff_margin_b
 				end
 				if _temp==1 then
 					posx=line.eff_margin_l
 				elseif _temp==2 then
 					posx=line.eff_margin_l+(vid_x-line.eff_margin_l-line.eff_margin_r)/2
 				else
-					posx=line.eff_margin_r
+					posx=vid-x-line.eff_margin_r
 				end
 			end
 		end
