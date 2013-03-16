@@ -57,7 +57,7 @@ TODO: Debug, debug, and keep debugging
 
 script_name="Gradient everything"
 script_description="Define a bounding box, and this will gradient everything."
-script_version="0.2.1"
+script_version="0.2.2"
 
 include("karaskel.lua")
 include("utils.lua")
@@ -336,17 +336,11 @@ function create_config()
 			x=1, y=7, width=1, height=1,
 			value=false
 		},
-		--Pos, org
-		{
-			class="checkbox",
-			name="do_pos",label="pos",
-			x=0,y=8,wdith=1,height=1,
-			value=false
-		},
+		--Org
 		{
 			class="checkbox",
 			name="do_org",label="org",
-			x=1,y=8,wdith=1,height=1,
+			x=0,y=8,wdith=1,height=1,
 			value=false
 		},
 		--Flip rotation
@@ -573,8 +567,53 @@ local function get_pos(line)
 	if posx==nil then
 		_,_,posx,posy=line.text:find("\\move%(([%d%.%-]*),([%d%.%-]*),")
 		if posx==nil then
-			posx=line.x
-			posy=line.y
+			_,_,align_n=line.text:find("\\an([%d%.%-]*)")
+			if align_n==nil then
+				_,_,align_dumb=line.text:find("\\a([%d%.%-]*)")
+				if align_dumb==nil then
+					--If the line has no alignment tags
+					posx=line.x
+					posy=line.y
+				else
+					--If the line has the \a alignment tag
+					vid_x,vid_y=aegisub.video_size()
+					align_dumb=tonumber(align_dumb)
+					if align_dumb>8 then
+						posy=vid_y/2
+					elseif align_dumb>4 then
+						posy=line.eff_margin_t
+					else
+						posy=line.eff_margin_b
+					end
+					_temp=align_dumb%4
+					if _temp==1 then
+						posx=line.eff_margin_l
+					elseif _temp==2 then
+						posx=line.eff_margin_l+(vid_x-line.eff_margin_l-line.eff_margin_r)/2
+					else
+						posx=line.eff_margin_r
+					end
+				end
+			else
+				--If the line has the \an alignment tag
+				vid_x,vid_y=aegisub.video_size()
+				align_n=tonumber(align_n)
+				_temp=align_n%3
+				if align_n>6 then
+					posy=line.eff_margin_t
+				elseif align_n>3 then
+					posy=vid_y/2
+				else
+					posy=line.eff_margin_b
+				end
+				if _temp==1 then
+					posx=line.eff_margin_l
+				elseif _temp==2 then
+					posx=line.eff_margin_l+(vid_x-line.eff_margin_l-line.eff_margin_r)/2
+				else
+					posx=line.eff_margin_r
+				end
+			end
 		end
 	end
 	return posx,posy
@@ -626,7 +665,7 @@ function gradient_everything(sub,sel,config)
 	if config["ybord"] then table.insert(transform_tags,"ybord") end
 	if config["xshad"] then table.insert(transform_tags,"xshad") end
 	if config["yshad"] then table.insert(transform_tags,"yshad") end
-	
+		
 	--Number of pixels per strip
 	strip=config["strip_pix"]	
 	
@@ -636,9 +675,8 @@ function gradient_everything(sub,sel,config)
 	--Set the acceleration (default 1)
 	local accel=config["accel"]
 	
-	--Controls whether to apply transform to pos, clip, or origin
+	--Controls whether to apply transform to or origin
 	do_org=config["do_org"]
-	do_pos=config["do_pos"]
 	
 	--Controls vertical or horizontal
 	do_vertical=true
@@ -714,9 +752,6 @@ function gradient_everything(sub,sel,config)
 		last_line.comment=true
 		sub[sel[i]-1]=first_line
 		sub[sel[i]]=last_line
-		
-		--Now that that's done, it's safe to remove the clip tag
-		table.insert(transform_tags,"clip")
 		
 		--Preprocess
 		karaskel.preproc_line(sub,meta,styles,first_line)
@@ -803,7 +838,7 @@ function gradient_everything(sub,sel,config)
 		end
 		
 		--Create a line table based on first_line, but without relevant tags
-		local _temp_text=line_exclude(first_line.text,transform_tags)
+		local _temp_text=line_exclude(first_line.text,{unpack(transform_tags),"clip"})
 		local this_table={}
 		x=1
 		for thistag,thistext in _temp_text:gmatch("({[^{}]*})([^{}]*)") do
@@ -829,20 +864,6 @@ function gradient_everything(sub,sel,config)
 			local clip_tag="\\clip(%d,%d,%d,%d)"
 			if do_vertical then clip_tag=clip_tag:format(clip1,clip2+cum_off+(j-1)*strip,clip3,clip2+cum_off+j*strip)
 			else clip_tag=clip_tag:format(clip1+cum_off+(j-1)*strip,clip2,clip1+cum_off+j*strip,clip4) end
-			
-			--Get rid of clip tags. Done separately just because neatness
-			--this_line.text=line_exclude(this_line.text,{"clip"})
-			
-			--Turn all \1c tags into \c tags, just for convenience
-			this_line.text=this_line.text:gsub("\\1c","\\c")
-			
-			--Remove all the relevant tags so they can be replaced with their proper interpolated values
-			this_line.text=time_exclude(this_line.text,transform_tags)
-			this_line.text=line_exclude(this_line.text,transform_tags)
-			this_line.text=this_line.text:gsub("{}","")
-			
-			--Make sure this line starts with tags
-			if this_line.text:find("^{")==nil then this_line.text="{}"..this_line.text end
 						
 			--Interpolate all the relevant parameters and insert		
 			rebuilt_text=""
@@ -897,15 +918,13 @@ function gradient_everything(sub,sel,config)
 			this_line.text=rebuilt_text:gsub("{}","")
 			this_line.comment=false
 			
-			--Handle pos transform
-			if do_pos then
-				this_line.text=line_exclude(this_line.text,{"pos"})
-				this_line.text=this_line.text:gsub("^{",
-						"{\\pos("..
-						float2str(interpolate(factor,sposx,eposx))..","..
-						float2str(interpolate(factor,sposy,eposy))..")"	
-					)
-			end
+			--Forcibly add \pos
+			this_line.text=line_exclude(this_line.text,{"pos"})
+			this_line.text=this_line.text:gsub("^{",
+					"{\\pos("..
+					float2str(interpolate(factor,sposx,eposx))..","..
+					float2str(interpolate(factor,sposy,eposy))..")"	
+				)
 			
 			--Handle org transform
 			if do_org then
