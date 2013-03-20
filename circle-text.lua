@@ -237,12 +237,22 @@ function circle_text(sub,sel)
 			local _,_,font_scx=val.tag:find("\\fscx([%-%.%d]+)")
 			local _,_,font_scy=val.tag:find("\\fscy([%-%.%d]+)")
 			local _,_,font_sp=val.tag:find("\\fsp([%-%.%d]+)")
+			local _,_,_bold=val.tag:find("\\b([01])")
+			local _,_,_italic=val.tag:find("\\i([01])")
 			
 			current_style.fontname=font_name or current_style.fontname
 			current_style.fontsize=tonumber(font_size) or current_style.fontsize
 			current_style.scale_x=tonumber(font_scx) or current_style.scale_x
 			current_style.scale_y=tonumber(font_scy) or current_style.scale_y
 			current_style.spacing=tonumber(font_sp) or current_style.spacing
+			if _bold~=nil then
+				if _bold=="1" then current_style.bold=true
+				else current_style.bold=false end
+			end
+			if _italic~=nil then
+				if _italic=="1" then current_style.italic=true
+				else current_style.italic=false end
+			end
 			
 			val.style=deep_copy(current_style)
 			
@@ -286,9 +296,8 @@ function circle_text(sub,sel)
 						or 0
 				end
 				
-				rebuilt_text=tchar.char==" " and rebuilt_text.." "
-					or rebuilt_text..string.format("{\\frz%.3f\\fsp%.2f}%s",
-						start_angle+rot_dir*cum_rot,this_spacing,tchar.char)
+				rebuilt_text=rebuilt_text..string.format("{\\frz%.3f\\fsp%.2f}%s",
+					start_angle+rot_dir*cum_rot,this_spacing,tchar.char)
 				
 				cum_rot=cum_rot+arc_angle(this_width,radius)
 			end
