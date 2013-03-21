@@ -317,7 +317,10 @@ function grad_char(sub,sel)
 				idx=1				
 				total=string.len(a)+1
 				
-				return c..a:gsub("(.)", function(b)
+				--Replaces "\N" with the newline character
+				a=a:gsub("\\N","\n")
+				
+				a=a:gsub("(.)", function(b)
 					--Interpolation factor
 					factor=idx/total
 					
@@ -344,6 +347,11 @@ function grad_char(sub,sel)
 					--The final tag, with a star to indicate it was added through interpolation
 					return "{\*"..non_time_tags.."}"..b
 				end)
+				
+				--Turns newline back to "\N"
+				a=a:gsub("\n","\\N")
+				
+				return c..a
 			end)
 		end
 		

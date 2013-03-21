@@ -27,6 +27,7 @@ script_description="Puts the text on a circular arc centered on the origin"
 script_version="0.1"
 
 include("karaskel.lua")
+--require "re"
 
 --Creates a deep copy of the given table
 local function deep_copy(source_table)
@@ -170,6 +171,11 @@ function circle_text(sub,sel)
 	local meta,styles = karaskel.collect_head(sub, false)
 	
 	for si,li in ipairs(sel) do
+		
+		--Progress report
+		aegisub.progress.task("Processing line "..si.."/"..#sel)
+		aegisub.progress.set(100*si/#sel)
+		
 		--Read in the line
 		line=sub[li]
 		
@@ -297,17 +303,40 @@ function circle_text(sub,sel)
 				end
 				
 				rebuilt_text=rebuilt_text..string.format("{\\frz%.3f\\fsp%.2f}%s",
-					start_angle+rot_dir*cum_rot,this_spacing,tchar.char)
+					(start_angle+rot_dir*cum_rot)%360,this_spacing,tchar.char)
 				
 				cum_rot=cum_rot+arc_angle(this_width,radius)
 			end
 		end
+		
+		--[[
+		--Fuck the re library. Maybe I'll come back to this
+		whitespaces=re.find(rebuilt_text,
+			'(\{\\\\frz[\\d\\.\\-]+\\\\fsp[\\d\\.\\-]+\}\\S)((?:\{\\\\frz[\\d\\.\\-]+\\\\fsp[\\d\\.\\-]+\}\\s)+)')
+		
+		for j=1,#whitespaces-1,2 do
+			first_tag=whitespaces[j].str
+			other_tags=whitespaces[j+1].str
+			aegisub.log("%s%s\n",first_tag,other_tags)
+			first_space=first_tag:match("\\fsp([%d%.%-]+)")
+			other_spaces=0
+			total_wsp=0
+			for _sp in other_tags:gmatch("\\fsp([%d%.%-]+)") do
+				other_spaces=other_spaces+tonumber(_sp)
+				total_wsp=total_wsp+1
+			end
+			total_space=tonumber(first_space)+other_spaces
+			rebuilt_text=rebuilt_text:gsub(first_tag..other_tags,
+				first_tag:gsub("\\fsp[%d%.%-]+",string.format("\\fsp%.2f",total_space))..string.rep(" ",total_wsp))
+		end]]--
 		
 		line.text=rebuilt_text:gsub("}{","")
 		
 		sub[li]=line
 		
 	end
+	
+	aegisub.set_undo_point(script_name)
 	
 end
 

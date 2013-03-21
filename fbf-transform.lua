@@ -1176,9 +1176,9 @@ function load_tags_remove(sub,sel)
 		for si, li in ipairs(sel) do
 			line=sub[li]
 			if config["doexcept"] then
-				line.text=line_exclude_except(line.text,tag_table)
+				line.text=line_exclude_except(line.text,tag_table):gsub("{}","")
 			else
-				line.text=line_exclude(line.text,tag_table)
+				line.text=line_exclude(line.text,tag_table):gsub("{}","")
 			end
 			sub[li]=line
 		end
