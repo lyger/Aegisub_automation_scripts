@@ -19,14 +19,15 @@ would get split into
 In theory, after running this script, the appearance of the typeset will be exactly the same, but
 every section will be on a different line, allowing you to work with them separately.
 
-Doesn't support \N. Yet.
+Doesn't support newlines (\N) and at this rate, never will. If someone teaches me about how .ass
+calculates newline heights, I might write a separate script to split at newlines.
 
 
 ]]--
 
 script_name="Split at tags"
 script_description="Splits the line into separate lines based on tag boundaries"
-script_version="0.1"
+script_version="0.2"
 
 include("karaskel.lua")
 
@@ -222,16 +223,23 @@ local function split_tag(sub,sel)
 		px,py=get_pos(line)
 		ox,oy=get_org(line)
 		
+		--If there are rotations in the line, then write the origin
+		do_org=false
+		
+		if line.text:match("\\fr[xyz]")~=nil then do_org=true end
+		
+		--Turn all \Ns into the newline character
+		--line.text=line.text:gsub("\\N","\n")
+		
+		--Make sure any newline followed by a non-newline character has a tag afterwards
+		--(i.e. force breaks at newlines)
+		--line.text=line.text:gsub("\n([^\n{])","\n{}%1")
+		
 		--Make line table
 		line_table={}
 		for thistag,thistext in line.text:gmatch("({[^{}]*})([^{}]*)") do
 			table.insert(line_table,{tag=thistag,text=thistext})
 		end
-		
-		--If there are rotations in the line, then write the origin
-		do_org=false
-		
-		if line.text:match("\\fr[xyz]")~=nil then do_org=true end
 		
 		--Stores current state of the line as style table
 		current_style=deep_copy(line.styleref)
@@ -241,6 +249,11 @@ local function split_tag(sub,sel)
 		
 		--Total width of the line
 		cum_width=0
+		--Total height of the line
+		--cum_height=0
+		--Stores the various cumulative widths for each linebreak
+		--subs_width={}
+		--subs_index=1
 		
 		--First pass to collect size data
 		for i,val in ipairs(line_table) do
@@ -265,7 +278,7 @@ local function split_tag(sub,sel)
 			end
 			if subtable["a"]~=nil then
 				dumbalign=tonumber(subtable["a"])
-				halign=dumalign%4
+				halign=dumbalign%4
 				valign=0
 				if dumbalign>8 then valign=3
 				elseif dumbalign>4 then valign=6
@@ -276,37 +289,93 @@ local function split_tag(sub,sel)
 			--Store this style table
 			val.style=deep_copy(current_style)
 			
-			--Get width of section
-			swidth=aegisub.text_extents(current_style,val.text)
+			--Get extents of the section. _sdesc is not used
+			--Temporarily remove all newlines first
+			swidth,sheight,_sdesc,sext=aegisub.text_extents(current_style,val.text:gsub("\n",""))
 			
-			--Add to cumulative
+			--aegisub.log("Text: %s\n--w: %.3f\n--h: %.3f\n--d: %.3f\n--el: %.3f\n\n",
+			--	val.text, swidth, sheight, _sdesc, sext)
+			
+			--Add to cumulative width
 			cum_width=cum_width+swidth
 			
+			--Total height of the line
+			--theight=0
+			
+			--Handle tasks for a line that has a newline
+			--[[if val.text:match("\n")~=nil then
+				--Add sheight for each newline, if any
+				for nl in val.text:gmatch("\n") do
+					theight=theight+sheight
+				end
+				
+				--Add the external lead to account for the line of normal text
+				--theight=theight+sext
+				
+				--Store the current cumulative width and reset it to zero
+				subs_width[subs_index]=cum_width
+				subs_index=subs_index+1
+				cum_width=0
+				
+				--Add to cumulative height
+				cum_height=cum_height+theight
+			else
+				theight=sheight+sext
+			end]]--
+			
 			--Add data to data table
-			table.insert(substr_data,{["width"]=swidth,["subtable"]=subtable})
+			table.insert(substr_data,
+				{["width"]=swidth,["height"]=theight,["subtable"]=subtable})
 			
 		end
 		
+		--Store the last cumulative width
+		--subs_width[subs_index]=cum_width
+		
+		--Add the last cumulative height
+		--cum_height=cum_height+substr_data[#substr_data].height
+		
 		--Stores current state of the line as a state subtable
-		current_subtable=shallow_copy(substr_data[1].subtable)
+		current_subtable=deep_copy(substr_data[1].subtable)
 		
-		--How far into the line we've gotten
-		offset=0
+		--How far to offset the x coordinate
+		xoffset=0
 		
-		--Ways of calculating the new position
-		pos_func={}
-		--Right aligned
-		pos_func[1]=function(w)
-				return px+offset
+		--How far to offset the y coordinate
+		--yoffset=0
+		
+		--Newline index
+		--nindex=1
+		
+		--Ways of calculating the new x position
+		xpos_func={}
+		--Left aligned
+		xpos_func[1]=function(w)
+				return px+xoffset
 			end
 		--Center aligned
-		pos_func[2]=function(w)
-				return px-cum_width/2+offset+w/2
+		xpos_func[2]=function(w)
+				return px-cum_width/2+xoffset+w/2
 			end
-		--Left aligned
-		pos_func[3]=function(w)
-				return px-cum_width+offset
+		--Right aligned
+		xpos_func[0]=function(w)
+				return px-cum_width+xoffset+w
 			end
+		
+		--Ways of calculating the new y position
+		--[[ypos_func={}
+		--Bottom aligned
+		ypos_func[1]=function(h)
+				return py-cum_height+yoffset+h
+			end
+		--Middle aligned
+		ypos_func[2]=function(h)
+				return py-cum_height/2+yoffset+w/2
+			end
+		--Top aligned
+		ypos_func[3]=function(h)
+				return py+yoffset
+			end]]--
 		
 		--Second pass to generate lines
 		for i,val in ipairs(line_table) do
@@ -327,21 +396,35 @@ local function split_tag(sub,sel)
 				end
 			end
 			
-			--Figure out where the new x coord should be
-			new_x=pos_func[current_style.align%3](substr_data[i].width)
+			--Figure out where the new x and y coords should be
+			new_x=xpos_func[current_style.align%3](substr_data[i].width)
+			--new_y=ypos_func[math.ceil(current_style.align/3)](substr_data[i].height)
 			
 			--Check if the text ends in whitespace
-			wsp=val.text:match("%s+$")
+			wsp=val.text:gsub("\n",""):match("%s+$")
 			
 			--Modify positioning accordingly
 			if wsp~=nil then
 				wsp_width=aegisub.text_extents(val.style,wsp)
 				if current_style.align%3==2 then new_x=new_x-wsp_width/2
-				else new_x=new_x-wsp_width end
+				elseif current_style.align%3==0 then new_x=new_x-wsp_width end
 			end
 			
-			--Increase offset
-			offset=offset+substr_data[i].width
+			--Increase x offset
+			xoffset=xoffset+substr_data[i].width
+			
+			--Handle what happens in the line contains newlines
+			--[[if val.text:match("\n")~=nil then
+				--Increase index and reset x offset
+				nindex=nindex+1
+				xoffset=0
+				--Increase y offset
+				yoffset=yoffset+substr_data[i].height
+				
+				--Remove the last newline and convert back to \N
+				val.text=val.text:gsub("\n$","")
+				val.text=val.text:gsub("\n","\\N")
+			end]]--
 			
 			--Start rebuilding text
 			rebuilt_tag=string.format("{\\pos(%s,%s)}",float2str(new_x),float2str(py))
@@ -366,6 +449,7 @@ local function split_tag(sub,sel)
 			--Insert the new line
 			sub.insert(li+lines_added+1,new_line)
 			lines_added=lines_added+1
+			
 		end
 		
 	end
