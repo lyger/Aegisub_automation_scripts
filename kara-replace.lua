@@ -1,6 +1,6 @@
 script_name="Karaoke replacer"
 script_description="Replaces the syllables of a verse"
-script_version="0.2"
+script_version="0.2.1"
 
 --Fuck it, I should comment this code. Her goes
 function kara_replace(sub,sel)
@@ -54,9 +54,11 @@ function kara_replace(sub,sel)
 				"Two join a syllable with the one after it, put a + after\n"..
 				"the syllable.\n"..
 				"To split a syllable (you'll have to adjust it yourself),\n"..
-				"put a | where you want the split.\n\n"..
+				"put a | where you want the split.\n"..
+				"To insert a blank syllable (for padding), type _\n"..
+				"You can ignore any blank syllables in the original line.\n\n"..
 				"Example:\n"..
-				"ko re  wa+  re|i  de su",
+				"_ ko re  wa+  re|i  de su",
 				x=0,y=0,width=1,height=1
 			}
 		}
@@ -133,7 +135,7 @@ function kara_replace(sub,sel)
 					
 				--The usual replacement
 				else
-					rebuilt_text=rebuilt_text..line_table[oi].tag..replace[ri]
+					rebuilt_text=rebuilt_text..line_table[oi].tag..replace[ri]:gsub("_","")
 				end
 				
 				--Increment indices
