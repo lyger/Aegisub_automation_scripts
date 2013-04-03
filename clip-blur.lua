@@ -21,7 +21,7 @@ create a whopping 41 lines. Use with caution.
 
 script_name="Blur clip"
 script_description="Blurs a vector clip."
-script_version="0.1"
+script_version="0.1.1"
 
 include("karaskel.lua")
 include("utils.lua")
@@ -412,7 +412,7 @@ function blur_clip(sub,sel)
 			tline.text=tline.text:gsub("\\alpha([^\\{}]+)",
 				function(a) return "\\alpha"..interpolate_alpha(factor,a,"&HFF&") end)
 			tline.text=tline.text:gsub("\\([1-4]a)([^\\{}]+)",
-				function(a,b) return "\\"..a.."a"..interpolate_alpha(factor,b,"&HFF&") end)
+				function(a,b) return "\\"..a..interpolate_alpha(factor,b,"&HFF&") end)
 			
 			--Write the correct clip
 			thisclip=grow(otable,j/escale-boffset,escale)
