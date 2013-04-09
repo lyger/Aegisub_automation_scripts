@@ -21,7 +21,7 @@ create a whopping 41 lines. Use with caution.
 
 script_name="Blur clip"
 script_description="Blurs a vector clip."
-script_version="0.1.1"
+script_version="0.1.2"
 
 include("karaskel.lua")
 include("utils.lua")
@@ -326,7 +326,7 @@ function blur_clip(sub,sel)
 		line.comment=false
 		
 		--Find the clipping shape
-		tvector=line.text:match("\\clip%(([^%(%)]+)%)")
+		ctype,tvector=line.text:match("\\(i?clip)%(([^%(%)]+)%)")
 		
 		--Return if it doesn't exist
 		if tvector==nil then
@@ -351,7 +351,7 @@ function blur_clip(sub,sel)
 		--The innermost line
 		iline=shallow_copy(line)
 		itable=grow(otable,-1*boffset,escale)
-		iline.text=iline.text:gsub("\\clip%([^%(%)]+%)","\\clip("..eexp..","..vtable_to_string(itable)..")")
+		iline.text=iline.text:gsub("\\i?clip%([^%(%)]+%)","\\"..ctype.."("..eexp..","..vtable_to_string(itable)..")")
 		
 		--Add it to the subs
 		sub.insert(li+lines_added+1,iline)
@@ -405,6 +405,9 @@ function blur_clip(sub,sel)
 			--Interpolation factor
 			factor=j/(bsize*escale+1)
 			
+			--Flip if it's an iclip
+			if ctype=="iclip" then factor=1-factor end
+			
 			--Copy the line
 			tline=shallow_copy(line)
 			
@@ -419,7 +422,7 @@ function blur_clip(sub,sel)
 			clipstring=vtable_to_string(thisclip)..vtable_to_string(reverse_vector_table(prevclip))
 			prevclip=thisclip
 			
-			tline.text=tline.text:gsub("\\clip%([^%(%)]+%)","\\clip("..eexp..","..clipstring..")")
+			tline.text=tline.text:gsub("\\i?clip%([^%(%)]+%)","\\clip("..eexp..","..clipstring..")")
 			
 			--Insert the line
 			sub.insert(li+lines_added+1,tline)
