@@ -18,7 +18,7 @@ convenience above all, so it runs with a single button press and no time-consumi
 
 script_name="Gradient by character"
 script_description="Smoothly transforms tags across your line, by character."
-script_version="0.1"
+script_version="0.2"
 
 include("karaskel.lua")
 include("utils.lua")
@@ -277,6 +277,9 @@ function grad_char(sub,sel)
 				current_state[ctag]=cval
 			end
 			
+			--Stores state of each character, to prevent redundant tags
+			char_state=deep_copy(current_state)
+			
 			--Local function for interpolation
 			local function handle_interpolation(factor,tag,sval,eval)
 				local ivalue=""
@@ -336,13 +339,21 @@ function grad_char(sub,sel)
 						--Figure out the starting state of the param
 						local sparam=current_state[ttag]
 						if sparam==nil then sparam=this_style[ttag] end
-						sparam=sparam:gsub("%)","")--Just in case a \t tag snuck in
+						if type(sparam)~="number" then sparam=sparam:gsub("%)","") end--Just in case a \t tag snuck in
 						
-						--The string version of the interpolated parameter
-						local iparam=handle_interpolation(factor,ttag,sparam,tparam)
-						
-						non_time_tags=non_time_tags.."\\"..ttag..iparam
+						--Prevent redundancy
+						if sparam~=tparam then
+							--The string version of the interpolated parameter
+							local iparam=handle_interpolation(factor,ttag,sparam,tparam)
+							
+							if iparam~=tostring(char_state[ttag]) then
+								non_time_tags=non_time_tags.."\\"..ttag..iparam
+								char_state[ttag]=iparam
+							end
+						end
 					end
+					
+					if non_time_tags:len() < 1 then return b end
 					
 					--The final tag, with a star to indicate it was added through interpolation
 					return "{\*"..non_time_tags.."}"..b
