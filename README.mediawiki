@@ -42,7 +42,7 @@ Because of the difficulty of calculating the exact size and shape of the typeset
 
 ==== clip-shifter.lua ====
 
-This is primarly a helper script to go with gradient-everything. If you want to apply gradient-everything to many lines without having to redraw the bounding box each time, clip-shifter will move and add the bounding box for you.
+This is primarily a helper script to go with gradient-everything. If you want to apply gradient-everything to many lines without having to redraw the bounding box each time, clip-shifter will move and add the bounding box for you.
 
 === gradient-by-char.lua ===
 
