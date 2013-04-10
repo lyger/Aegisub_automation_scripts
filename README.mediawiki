@@ -2,7 +2,7 @@
 
 This is the page where I'll be uploading and updating the various automation scripts I write for Aegisub. These are primarily typesetting-oriented, but there are a few scripts related to karaoke timing, and I might write editing- or QC-related scripts in the future.
 
-I take requests (if you can convince me you have a task that would be useful automated). You can find me as lyger on irc.rizon.net.
+I take requests (if you can convince me you have a task that would be useful automated). Also, if you find a bug in any of these scripts, by all means tell me so I can fix it. You can find me as lyger on irc.rizon.net.
 
 == Typesetting Scripts ==
 
