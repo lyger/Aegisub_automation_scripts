@@ -24,11 +24,13 @@ The "precision" option can improve the appearance, but note that it scales expon
 
 === fbf-transform.lua ===
 
-The first "advanced" automation I wrote since writing border-split. This script is very powerful and versatile, but it expects a certain amount out of the typesetter. Read the instructions at the top of the script file. The paragraphs below are only a summary.
+The first "advanced" automation I wrote since writing border-split. This script is very powerful and versatile, but it expects a certain amount out of the typesetter. Read the instructions at the top of the script file for full details.
 
 This allows you to animate nearly all of the parameters of a typeset frame-by-frame. You start with an existing frame-by-frame typeset (possibly generated using Mocha data, or just by pressing ctrl-d a lot). Then you visually typeset "keyframes" until they look the way you want them to. This script will fill in all the frames in between the keyframes so that they transform smoothly.
 
 Note that as a typesetter, you will need to typeset the keyframes by hand. In essence, instead of punching in all your options into a popup window, you can work on the appearance of the line the way you normally typeset. I personally find this to be more intuitive, but again, it requires more work out of the typesetter than a simple click-on-buttons interface.
+
+Also note that there is no requirement that the lines you select actually represent a frame-by-frame typeset that is sorted by time. This script transforms parameters across the lines you select; that's all. How you use it is up to you.
 
 === gradient-everything.lua ===
 
