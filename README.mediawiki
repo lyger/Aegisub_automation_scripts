@@ -50,7 +50,7 @@ A by-character version of gradient-everything. It has the most of the features o
 
 That being said, I will recommend that typesetters use this script instead of gradient-everything in the vast majority of cases, simply because gradient-everything will generate dozens of lines and result in lots of lag if you're not careful. In most cases, gradient-by-char will be sufficient. Not to mention, working with a single-line typeset is usually easier.
 
-This automation has no popup interface (unlike gradient-everything). It's locked to transform any different parameters that it detects. It's also locked to "rotations < 180 degrees" mode (you can read more about this in the readme at the top of the script).
+This automation has no popup interface (unlike gradient-everything). It's locked to transform any different parameters that it detects. It's also locked to "rotations less than 180 degrees" mode (you can read more about this in the readme at the top of the script).
 
 === modify-mocha.lua ===
 
