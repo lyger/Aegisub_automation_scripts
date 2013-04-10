@@ -1,6 +1,6 @@
 == Introduction ==
 
-This is the page where I'll be uploading and updating the various automation scripts I write for Aegisub. These are primarily typesetting-oriented, but there are a few scripts related to karaoke timing and I might write editing- or QC-related scripts in the future.
+This is the page where I'll be uploading and updating the various automation scripts I write for Aegisub. These are primarily typesetting-oriented, but there are a few scripts related to karaoke timing, and I might write editing- or QC-related scripts in the future.
 
 I take requests (if you can convince me you have a task that would be useful automated). You can find me as lyger on irc.rizon.net.
 
