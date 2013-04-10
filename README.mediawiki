@@ -20,7 +20,7 @@ The \clip tag naturally generates a very sharp edge. For a typesetter who wants 
 
 This script serves the much-needed function of blurring the edge of a \clip by duplicating the line, drawing more \clips, and decreasing the alpha. Due to the nature of \clip, the appearance will not always be perfect, even if all the numbers match. Nonetheless, it's better than nothing.
 
-The "precision" option can improve the appearance, but note that it scales exponentially. A precision of 4 generates 16 times as many lines as a precision of 1.
+The "precision" option can improve the appearance, but note that it scales exponentially. A precision of 4 generates 8 times as many lines as a precision of 1.
 
 === fbf-transform.lua ===
 
