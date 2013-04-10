@@ -1,0 +1,31 @@
+== Introduction ==
+
+This is the page where I'll be uploading and updating the various automation scripts I write for Aegisub. These are primarily typesetting-oriented, but there are a few scripts related to karaoke timing and I might write editing- or QC-related scripts in the future.
+
+I take requests (if you can convince me you have a task that would be useful automated). You can find me as lyger on irc.rizon.net.
+
+== Typesetting Scripts ==
+
+=== border-split.lua ===
+
+The first and probably the most useful automation script I wrote. Now that I have a lot more experience writing these automations, I realize how messy the code is, but it works and is remarkably bug-free.
+
+This takes a single bordered line and splits it into two lines. For a single bordered line, applying a \blur tag will only blur the outer edge. This automatically splits the line in two so that the \blur will apply to both edges. There are a handful of other options that let you customize the behavior of the automation.
+
+Compared to my other scripts, the behavior is a bit odd. Instead of applying to the selected lines, the script applies to lines with "bord" in the actor field. This is mostly an artifact of my days working with karaoke templates, but I honestly rather like the workflow.
+
+=== fbf-transform.lua ===
+
+The first "advanced" automation I wrote since writing border-split. This script is very powerful and versatile, but it expects a certain amount out of the typesetter. Read the instructions at the top of the script file. The paragraphs below are only a summary.
+
+This allows you to animate nearly all of the parameters of a typeset frame-by-frame. You start with an existing frame-by-frame typeset (possibly generated using Mocha data, or just by pressing ctrl-d a lot). Then you visually typeset "keyframes" until they look the way you want them to. This script will fill in all the frames in between the keyframes so that they transform smoothly.
+
+Note that as a typesetter, you will need to typeset the keyframes by hand. In essence, instead of punching in all your options into a popup window, you can work on the appearance of the line the way you normally typeset. I personally find this to be more intuitive, but again, it requires more work out of the typesetter than a simple click-on-buttons interface.
+
+=== gradient-everything.lua ===
+
+This was written based on the code of fbf-transform. Instead of creating frame-by-frame animations, gradient-everything will "gradient" the parameters. Put another way, fbf-transform will transform parameters in time, while gradient-everything can transform parameters in space.
+
+Again, you define "key" lines, but unlike fbf-transform you don't need to have all the lines in between already; the script will generate them for you. These "key" lines will be smoothly merged together by the script, based on the options you enter from the popup menu.
+
+(in progress...)
