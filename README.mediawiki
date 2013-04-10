@@ -14,6 +14,14 @@ This takes a single bordered line and splits it into two lines. For a single bor
 
 Compared to my other scripts, the behavior is a bit odd. Instead of applying to the selected lines, the script applies to lines with "bord" in the actor field. This is mostly an artifact of my days working with karaoke templates, but I honestly rather like the workflow.
 
+=== clip-blur.lua ===
+
+The \clip tag naturally generates a very sharp edge. For a typesetter who wants his signs to blend in, that sharp edge can stick out like a sore thumb.
+
+This script serves the much-needed function of blurring the edge of a \clip by duplicating the line, drawing more \clips, and decreasing the alpha. Due to the nature of \clip, the appearance will not always be perfect, even if all the numbers match. Nonetheless, it's better than nothing.
+
+The "precision" option can improve the appearance, but note that it scales exponentially. A precision of 4 generates 16 times as many lines as a precision of 1.
+
 === fbf-transform.lua ===
 
 The first "advanced" automation I wrote since writing border-split. This script is very powerful and versatile, but it expects a certain amount out of the typesetter. Read the instructions at the top of the script file. The paragraphs below are only a summary.
@@ -28,4 +36,44 @@ This was written based on the code of fbf-transform. Instead of creating frame-b
 
 Again, you define "key" lines, but unlike fbf-transform you don't need to have all the lines in between already; the script will generate them for you. These "key" lines will be smoothly merged together by the script, based on the options you enter from the popup menu.
 
-(in progress...)
+Because of the difficulty of calculating the exact size and shape of the typeset, this script requires that the user define a bounding box for the gradient using the rectangular clip tool in aegisub.
+
+==== clip-shifter.lua ====
+
+This is primarly a helper script to go with gradient-everything. If you want to apply gradient-everything to many lines without having to redraw the bounding box each time, clip-shifter will move and add the bounding box for you.
+
+=== gradient-by-char.lua ===
+
+A by-character version of gradient-everything. It has the most of the features of gradient-everything, but its resolution is only by-character, and for obvious reasons vertical gradients are not possible.
+
+That being said, I will recommend that typesetters use this script instead of gradient-everything in the vast majority of cases, simply because gradient-everything will generate dozens of lines and result in lots of lag if you're not careful. In most cases, gradient-by-char will be sufficient. Not to mention, working with a single-line typeset is usually easier.
+
+This automation has no popup interface (unlike gradient-everything). It's locked to transform any different parameters that it detects. It's also locked to "rotations < 180 degrees" mode (you can read more about this in the readme at the top of the script).
+
+=== modify-mocha.lua ===
+
+I wrote this script when I had to deal with a Mocha-tracked typeset that appeared in a flashback in a later episode. Obviously, I didn't want to re-typeset the sign, and instead copy-pasted the sign from the earlier episode. Unfortunately, the colors were all grayed out in the flashback, and the sign itself was a couple layers, with borders and shadows and whatnot. Fixing all those colors would have been a find-and-replace nightmare.
+
+This automation allows you to duplicate the first frame of the typeset, modify it until its appearance matches the new appearance that you want, and automatically apply these changes to the rest of the lines. Detailed instructions are at the top of the script.
+
+=== split-tags.lua ===
+
+Some effects only work if each section of a typeset is split onto a different line. For example, if you want the letters to zoom in one-by-one. But once you've split all the letters onto different lines, positioning them correctly is a huge hassle.
+
+This will split a single line into multiple lines while preserving the appearance of the original single-line typeset. In theory, after running this, your typeset will look exactly the same as it did before, but on multiple lines. The script splits every time it sees an {override block}. You can put blank {} blocks to force a split, and it should still work.
+
+=== circle-text.lua ===
+
+Puts text onto a circle, on a single line. This is accomplished using \fsp and \frz trickery. The curve of the circle is defined by placing the origin. If you select the z rotation tool in Aegisub, it will display a circle that is roughly the same as the circle your text will end up on after applying this automation. Detailed instructions are at the top of the script, but it's pretty straightforward.
+
+== Karaoke Scripts ==
+
+=== kara-helper.lua ===
+
+Certain karaoke effects require blank syllables at the beginning and end of the k-timed line, in order to leave room for transition-in and transition-out effects. This automation primarily takes care of making those sorts of timing adjustments automatically.
+
+If any k-timers have tasks they'd like to see added to this script, just contact me.
+
+=== kara-replace.lua ===
+
+Ever had to k-time a song and encountered a verse with the same tune and rhythm as a previous verse, but different lyrics? This automation allows you to reuse that timing, and quickly and efficiently replace the lyrics. Highlight the lines you wish to apply this to, run the automation, and click "help" for full instructions.
