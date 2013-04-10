@@ -10,7 +10,7 @@ I take requests (if you can convince me you have a task that would be useful aut
 
 The first and probably the most useful automation script I wrote. Now that I have a lot more experience writing these automations, I realize how messy the code is, but it works and is remarkably bug-free.
 
-This takes a single bordered line and splits it into two lines. For a single bordered line, applying a \blur tag will only blur the outer edge. This automatically splits the line in two so that the \blur will apply to both edges. There are a handful of other options that let you customize the behavior of the automation.
+This takes a single bordered line and splits it into two lines. For a single bordered line, applying a \blur tag will only blur the outer edge. This automatically splits the line in two so that the \blur will apply to both edges. There are a handful of other options that let you customize the behavior of the automation. Read the readme at the top of the script for full instructions.
 
 Compared to my other scripts, the behavior is a bit odd. Instead of applying to the selected lines, the script applies to lines with "bord" in the actor field. This is mostly an artifact of my days working with karaoke templates, but I honestly rather like the workflow.
 
