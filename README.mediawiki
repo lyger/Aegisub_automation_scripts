@@ -14,14 +14,6 @@ This takes a single bordered line and splits it into two lines. For a single bor
 
 Compared to my other scripts, the behavior is a bit odd. Instead of applying to the selected lines, the script applies to lines with "bord" in the actor field. This is mostly an artifact of my days working with karaoke templates, but I honestly rather like the workflow.
 
-=== clip-blur.lua ===
-
-The \clip tag naturally generates a very sharp edge. For a typesetter who wants his signs to blend in, that sharp edge can stick out like a sore thumb.
-
-This script serves the much-needed function of blurring the edge of a \clip by duplicating the line, drawing more \clips, and decreasing the alpha. Due to the nature of \clip, the appearance will not always be perfect, even if all the numbers match. Nonetheless, it's better than nothing.
-
-The "precision" option can improve the appearance, but note that it scales exponentially. A precision of 4 generates 8 times as many lines as a precision of 1.
-
 === fbf-transform.lua ===
 
 The first "advanced" automation I wrote since writing border-split. This script is very powerful and versatile, but it expects a certain amount out of the typesetter. Read the instructions at the top of the script file for full details.
@@ -51,6 +43,22 @@ A by-character version of gradient-everything. It has the most of the features o
 That being said, I will recommend that typesetters use this script instead of gradient-everything in the vast majority of cases, simply because gradient-everything will generate dozens of lines and result in lots of lag if you're not careful. In most cases, gradient-by-char will be sufficient. Not to mention, working with a single-line typeset is usually easier.
 
 This automation has no popup interface (unlike gradient-everything). It's locked to transform any different parameters that it detects. It's also locked to "rotations less than 180 degrees" mode (you can read more about this in the readme at the top of the script).
+
+=== clip-blur.lua ===
+
+The \clip tag naturally generates a very sharp edge. For a typesetter who wants his signs to blend in, that sharp edge can stick out like a sore thumb.
+
+This script serves the much-needed function of blurring the edge of a \clip by duplicating the line, drawing more \clips, and decreasing the alpha. Due to the nature of \clip, the appearance will not always be perfect, even if all the numbers match. Nonetheless, it's better than nothing.
+
+The "precision" option can improve the appearance, but note that it scales exponentially. A precision of 4 generates 8 times as many lines as a precision of 1.
+
+=== clip-grad.lua ===
+
+This script is not as versatile as I'd have liked, due to limitations cause by the way anti-aliasing works. Nonetheless, it should be useful in plenty of situations.
+
+This works the same as clip-blur, but instead of blurring the edge of the \clip, it gradients from one color to another (unlike gradient-everything, it does not gradient any other parameters. Sorry). To correct for anti-aliasing artifacts, there is a forced one-pixel overlap for each stripe of the gradient. As a result, this script does not work on semitransparent typesets at all.
+
+Nonetheless, it provides the ability to create a gradient of more or less any arbitrary shape.
 
 === modify-mocha.lua ===
 
