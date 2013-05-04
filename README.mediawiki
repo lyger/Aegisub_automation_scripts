@@ -54,7 +54,7 @@ The "precision" option can improve the appearance, but note that it scales expon
 
 === clip-grad.lua ===
 
-This script is not as versatile as I'd have liked, due to limitations cause by the way anti-aliasing works. Nonetheless, it should be useful in plenty of situations.
+This script is not as versatile as I'd have liked, due to limitations caused by the way anti-aliasing works. Nonetheless, it should be useful in plenty of situations.
 
 This works the same as clip-blur, but instead of blurring the edge of the \clip, it gradients from one color to another (unlike gradient-everything, it does not gradient any other parameters. Sorry). To correct for anti-aliasing artifacts, there is a forced one-pixel overlap for each stripe of the gradient. As a result, this script does not work on semitransparent typesets at all.
 
