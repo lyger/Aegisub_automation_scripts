@@ -21,7 +21,7 @@ create a whopping 41 lines. Use with caution.
 
 script_name="Blur clip"
 script_description="Blurs a vector clip."
-script_version="0.1.2"
+script_version="0.1.3"
 
 include("karaskel.lua")
 include("utils.lua")
@@ -84,6 +84,7 @@ end
 --Reverses a vector table object
 function reverse_vector_table(vtable)
 	local nvtable={}
+	if #vtable<1 then return nvtable end
 	--Make sure vtable does not end in an m. I don't know why this would happen but still
 	maxi=#vtable
 	while vtable[maxi].class=="m" do
@@ -246,6 +247,64 @@ function unwrap(wvt)
 	return vt
 end
 
+--Returns the position of a line
+local function get_pos(line)
+	local _,_,posx,posy=line.text:find("\\pos%(([%d%.%-]*),([%d%.%-]*)%)")
+	if posx==nil then
+		_,_,posx,posy=line.text:find("\\move%(([%d%.%-]*),([%d%.%-]*),")
+		if posx==nil then
+			_,_,align_n=line.text:find("\\an([%d%.%-]*)")
+			if align_n==nil then
+				_,_,align_dumb=line.text:find("\\a([%d%.%-]*)")
+				if align_dumb==nil then
+					--If the line has no alignment tags
+					posx=line.x
+					posy=line.y
+				else
+					--If the line has the \a alignment tag
+					vid_x,vid_y=aegisub.video_size()
+					align_dumb=tonumber(align_dumb)
+					if align_dumb>8 then
+						posy=vid_y/2
+					elseif align_dumb>4 then
+						posy=line.eff_margin_t
+					else
+						posy=vid_y-line.eff_margin_b
+					end
+					_temp=align_dumb%4
+					if _temp==1 then
+						posx=line.eff_margin_l
+					elseif _temp==2 then
+						posx=line.eff_margin_l+(vid_x-line.eff_margin_l-line.eff_margin_r)/2
+					else
+						posx=vid_x-line.eff_margin_r
+					end
+				end
+			else
+				--If the line has the \an alignment tag
+				vid_x,vid_y=aegisub.video_size()
+				align_n=tonumber(align_n)
+				_temp=align_n%3
+				if align_n>6 then
+					posy=line.eff_margin_t
+				elseif align_n>3 then
+					posy=vid_y/2
+				else
+					posy=vid_y-line.eff_margin_b
+				end
+				if _temp==1 then
+					posx=line.eff_margin_l
+				elseif _temp==2 then
+					posx=line.eff_margin_l+(vid_x-line.eff_margin_l-line.eff_margin_r)/2
+				else
+					posx=vid-x-line.eff_margin_r
+				end
+			end
+		end
+	end
+	return posx,posy
+end
+
 --Main execution function
 function blur_clip(sub,sel)
 
@@ -328,10 +387,16 @@ function blur_clip(sub,sel)
 		--Find the clipping shape
 		ctype,tvector=line.text:match("\\(i?clip)%(([^%(%)]+)%)")
 		
-		--Return if it doesn't exist
+		--Cancel if it doesn't exist
 		if tvector==nil then
 			aegisub.log("Make sure all lines have a clip statement.")
-			return
+			aegisub.cancel()
+		end
+		
+		--Get position and add
+		px,py=get_pos(line)
+		if line.text:match("\\pos")==nil and line.text:match("\\move")==nil then
+			line.text=string.format("{\\pos(%d,%d)}",px,py)..line.text
 		end
 		
 		--If it's a rectangular clip, convert to vector clip
@@ -347,11 +412,17 @@ function blur_clip(sub,sel)
 		--Effective scale and scale exponent
 		eexp=sexp-oexp+1
 		escale=2^(eexp-1)
+		--aegisub.log("Escale: %.2f",escale)
 		
 		--The innermost line
 		iline=shallow_copy(line)
-		itable=grow(otable,-1*boffset,escale)
-		iline.text=iline.text:gsub("\\i?clip%([^%(%)]+%)","\\"..ctype.."("..eexp..","..vtable_to_string(itable)..")")
+		itable={}
+		if ctype=="iclip" then
+			itable=grow(otable,bsize*2^(oexp-1)-boffset,escale)
+		else
+			itable=grow(otable,-1*boffset,escale)
+		end
+		iline.text=iline.text:gsub("\\i?clip%([^%(%)]+%)","\\"..ctype.."("..sexp..","..vtable_to_string(itable)..")")
 		
 		--Add it to the subs
 		sub.insert(li+lines_added+1,iline)
@@ -400,7 +471,7 @@ function blur_clip(sub,sel)
 		
 		prevclip=itable
 		
-		for j=1,math.ceil(bsize*escale),1 do
+		for j=1,math.ceil(bsize*escale*2^(oexp-1)),1 do
 			
 			--Interpolation factor
 			factor=j/(bsize*escale+1)
@@ -422,7 +493,7 @@ function blur_clip(sub,sel)
 			clipstring=vtable_to_string(thisclip)..vtable_to_string(reverse_vector_table(prevclip))
 			prevclip=thisclip
 			
-			tline.text=tline.text:gsub("\\i?clip%([^%(%)]+%)","\\clip("..eexp..","..clipstring..")")
+			tline.text=tline.text:gsub("\\i?clip%([^%(%)]+%)","\\clip("..sexp..","..clipstring..")")
 			
 			--Insert the line
 			sub.insert(li+lines_added+1,tline)

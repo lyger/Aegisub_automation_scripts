@@ -23,7 +23,7 @@ interfere with the gradient. The same goes for shadow.
 
 script_name="Gradient along clip edge"
 script_description="Color gradient along clip edge. Solid alpha only."
-script_version="0.1"
+script_version="0.1.1"
 
 include("karaskel.lua")
 include("utils.lua")
@@ -249,10 +249,80 @@ function unwrap(wvt)
 	return vt
 end
 
+--Returns the position of a line
+local function get_pos(line)
+	local _,_,posx,posy=line.text:find("\\pos%(([%d%.%-]*),([%d%.%-]*)%)")
+	if posx==nil then
+		_,_,posx,posy=line.text:find("\\move%(([%d%.%-]*),([%d%.%-]*),")
+		if posx==nil then
+			_,_,align_n=line.text:find("\\an([%d%.%-]*)")
+			if align_n==nil then
+				_,_,align_dumb=line.text:find("\\a([%d%.%-]*)")
+				if align_dumb==nil then
+					--If the line has no alignment tags
+					posx=line.x
+					posy=line.y
+				else
+					--If the line has the \a alignment tag
+					vid_x,vid_y=aegisub.video_size()
+					align_dumb=tonumber(align_dumb)
+					if align_dumb>8 then
+						posy=vid_y/2
+					elseif align_dumb>4 then
+						posy=line.eff_margin_t
+					else
+						posy=vid_y-line.eff_margin_b
+					end
+					_temp=align_dumb%4
+					if _temp==1 then
+						posx=line.eff_margin_l
+					elseif _temp==2 then
+						posx=line.eff_margin_l+(vid_x-line.eff_margin_l-line.eff_margin_r)/2
+					else
+						posx=vid_x-line.eff_margin_r
+					end
+				end
+			else
+				--If the line has the \an alignment tag
+				vid_x,vid_y=aegisub.video_size()
+				align_n=tonumber(align_n)
+				_temp=align_n%3
+				if align_n>6 then
+					posy=line.eff_margin_t
+				elseif align_n>3 then
+					posy=vid_y/2
+				else
+					posy=vid_y-line.eff_margin_b
+				end
+				if _temp==1 then
+					posx=line.eff_margin_l
+				elseif _temp==2 then
+					posx=line.eff_margin_l+(vid_x-line.eff_margin_l-line.eff_margin_r)/2
+				else
+					posx=vid-x-line.eff_margin_r
+				end
+			end
+		end
+	end
+	return posx,posy
+end
+
 --Main execution function
 function grad_clip(sub,sel)
 
 	local meta,styles = karaskel.collect_head(sub, false)
+	
+	--Reference line to grab default gradient colors from
+	refline=sub[sel[1]]
+	karaskel.preproc_line(sub,meta,styles,refline)
+	refc1=refline.text:match("\\c(&H%x+&)") or refline.text:match("\\1c(&H%x+&)") or refline.styleref.color1
+	refc2=refline.text:match("\\2c(&H%x+&)") or refline.styleref.color2
+	refc3=refline.text:match("\\3c(&H%x+&)") or refline.styleref.color3
+	refc4=refline.text:match("\\4c(&H%x+&)") or refline.styleref.color4
+	
+	function ass_to_html(s)
+		return string.format("#%02X%02X%02X",extract_color(s))
+	end
 	
 	--GUI config
 	config=
@@ -314,42 +384,50 @@ function grad_clip(sub,sel)
 		{
 			class="color",
 			name="c1_1",
-			x=0,y=4,width=1,height=1
+			x=0,y=4,width=1,height=1,
+			value=refc1
 		},
 		{
 			class="color",
 			name="c2_1",
-			x=1,y=4,width=1,height=1
+			x=1,y=4,width=1,height=1,
+			value=refc2
 		},
 		{
 			class="color",
 			name="c3_1",
-			x=2,y=4,width=1,height=1
+			x=2,y=4,width=1,height=1,
+			value=refc3
 		},
 		{
 			class="color",
 			name="c4_1",
-			x=3,y=4,width=1,height=1
+			x=3,y=4,width=1,height=1,
+			value=refc4
 		},
 		{
 			class="color",
 			name="c1_2",
-			x=0,y=5,width=1,height=1
+			x=0,y=5,width=1,height=1,
+			value=refc1
 		},
 		{
 			class="color",
 			name="c2_2",
-			x=1,y=5,width=1,height=1
+			x=1,y=5,width=1,height=1,
+			value=refc2
 		},
 		{
 			class="color",
 			name="c3_2",
-			x=2,y=5,width=1,height=1
+			x=2,y=5,width=1,height=1,
+			value=refc3
 		},
 		{
 			class="color",
 			name="c4_2",
-			x=3,y=5,width=1,height=1
+			x=3,y=5,width=1,height=1,
+			value=refc4
 		}
 	}
 	--For some reason the utils.lua extract_color refuses to work, so here's my own
@@ -363,7 +441,7 @@ function grad_clip(sub,sel)
 	
 	--Show dialog
 	pressed,results=aegisub.dialog.display(config,{"Go","Cancel"})
-	if pressed=="Cancel" then aegisub.cancel() end
+	if pressed~="Go" then aegisub.cancel() end
 	
 	--Size of the blur
 	gsize=results["gsize"]
@@ -426,10 +504,10 @@ function grad_clip(sub,sel)
 		--Find the clipping shape
 		ctype,tvector=line.text:match("\\(i?clip)%(([^%(%)]+)%)")
 		
-		--Return if it doesn't exist
+		--Cancel if it doesn't exist
 		if tvector==nil then
 			aegisub.log("Make sure all lines have a clip statement.")
-			return
+			aegisub.cancel()
 		end
 		
 		--If it's a rectangular clip, convert to vector clip
@@ -445,6 +523,12 @@ function grad_clip(sub,sel)
 		
 		--Add tag block if none exists
 		if line.text:match("^{")==nil then line.text="{}"..line.text end
+		
+		--Get position and add
+		px,py=get_pos(line)
+		if line.text:match("\\pos")==nil and line.text:match("\\move")==nil then
+			line.text=line.text:gsub("^{",string.format("{\\pos(%d,%d)",px,py))
+		end
 		
 		--The innermost line
 		iline=shallow_copy(line)
