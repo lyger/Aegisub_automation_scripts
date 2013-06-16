@@ -57,7 +57,7 @@ TODO: Debug, debug, and keep debugging
 
 script_name="Gradient everything"
 script_description="Define a bounding box, and this will gradient everything."
-script_version="0.2.2"
+script_version="0.2.3"
 
 include("karaskel.lua")
 include("utils.lua")
@@ -611,7 +611,7 @@ local function get_pos(line)
 				elseif _temp==2 then
 					posx=line.eff_margin_l+(vid_x-line.eff_margin_l-line.eff_margin_r)/2
 				else
-					posx=vid-x-line.eff_margin_r
+					posx=vid_x-line.eff_margin_r
 				end
 			end
 		end
@@ -739,6 +739,9 @@ function gradient_everything(sub,sel,config)
 	cum_off=0
 	--And the index of insertion
 	ins_index=1
+	
+	--Store the new selection
+	local new_sel={}
 	
 	--Master control loop
 	--First cycle through all the selected "intervals" (pairs of two consecutive selected lines)
@@ -941,6 +944,7 @@ function gradient_everything(sub,sel,config)
 			
 			--Reinsert the line			
 			sub.insert(sel[#sel]+ins_index,this_line)
+			table.insert(new_sel,sel[#sel]+ins_index)
 			ins_index=ins_index+1
 			
 		end
@@ -948,6 +952,7 @@ function gradient_everything(sub,sel,config)
 		--Increase the cumulative offset
 		cum_off=cum_off+frames_per[i-1]*strip
 	end
+	return new_sel
 end
 
 --Opens the given file path and writes the preset tables to it
@@ -1173,7 +1178,7 @@ function load_ge(sub,sel)
 				end
 			end
 		end
-		gradient_everything(sub,sel,preset_used)
+		new_sel=gradient_everything(sub,sel,preset_used)
 		
 		--Get rid of the previous "last used"
 		delete_preset(presets,"?last")
@@ -1182,8 +1187,10 @@ function load_ge(sub,sel)
 		write_presets_to_file(config_path,presets)
 		
 		--Set undo point
-		aegisub.set_undo_point(script_name);
+		aegisub.set_undo_point(script_name)
+		return new_sel
 	end
+	return sel
 end
 
 function validate_ge(sub,sel)
