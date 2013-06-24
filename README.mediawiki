@@ -76,6 +76,10 @@ This will split a single line into multiple lines while preserving the appearanc
 
 Puts text onto a circle, on a single line. This is accomplished using \fsp and \frz trickery. The curve of the circle is defined by placing the origin. If you select the z rotation tool in Aegisub, it will display a circle that is roughly the same as the circle your text will end up on after applying this automation. Detailed instructions are at the top of the script, but it's pretty straightforward.
 
+=== layer-inc.lua ===
+
+Makes selected lines have layers that count up or down (e.g. 1,2,3,4,5...). The minimum layer number will be the highest layer within the selection. This is a predecessor to a possible gradient-everything clone based around creating outline gradients.
+
 == Karaoke Scripts ==
 
 === kara-helper.lua ===
