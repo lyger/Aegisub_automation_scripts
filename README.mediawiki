@@ -80,6 +80,10 @@ Puts text onto a circle, on a single line. This is accomplished using \fsp and \
 
 Makes selected lines have layers that count up or down (e.g. 1,2,3,4,5...). The minimum layer number will be the highest layer within the selection. This is a predecessor to a possible gradient-everything clone based around creating outline gradients.
 
+=== move-clip.lua ===
+
+Turns lines with \pos and a rectangular \clip into lines with \move and a \t transformed \clip, based on the user-input delta-x and delta-y values. This is primarily intended to allow rectangular-clipped gradients to move using \move statements.
+
 == Karaoke Scripts ==
 
 === kara-helper.lua ===
