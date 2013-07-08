@@ -76,7 +76,7 @@ debug presets features
 
 script_name="Frame-by-frame transform"
 script_description="Smoothly transforms between the first and last selected lines."
-script_version="0.8.3"
+script_version="0.8.4"
 
 include("karaskel.lua")
 include("utils.lua")
@@ -544,6 +544,21 @@ local function make_state_table(line_table,tag_table)
 	return this_state_table
 end
 
+local function sanitize(str)
+	str=str:gsub("%%","%%%%")
+	str=str:gsub("%(","%%%(")
+	str=str:gsub("%)","%%%)")
+	str=str:gsub("%[","%%%[")
+	str=str:gsub("%]","%%%]")
+	str=str:gsub("%.","%%%.")
+	str=str:gsub("%-","%%%-")
+	str=str:gsub("%+","%%%+")
+	str=str:gsub("%*","%%%*")
+	str=str:gsub("%^","%%%^")
+	str=str:gsub("%$","%%%$")
+	return str
+end
+
 --Modify the line tables so they are split at the same locations
 local function match_splits(line_table1,line_table2)
 	local i=1
@@ -554,7 +569,7 @@ local function match_splits(line_table1,line_table2)
 		tag2=line_table2[i].tag
 		--If the table1 item has longer text, break it in two based on the text of table2
 		if text1:len() > text2:len() then
-			_,_,newtext=text1:find(text2.."(.*)")
+			newtext=text1:match(sanitize(text2).."(.*)")
 			for j=#line_table1,i+1,-1 do
 				line_table1[j+1]=line_table1[j]
 			end
@@ -562,7 +577,7 @@ local function match_splits(line_table1,line_table2)
 			line_table1[i+1]={tag="{}",text=newtext}
 		--If the table2 item has longer text, break it in two based on the text of table1
 		elseif text1:len() < text2:len() then
-			_,_,newtext=text2:find(text1.."(.*)")
+			newtext=text2:match(sanitize(text1).."(.*)")
 			for j=#line_table2,i+1,-1 do
 				line_table2[j+1]=line_table2[j]
 			end
@@ -868,11 +883,11 @@ function frame_transform(sub,sel,config)
 			ttext_temp=ttext:gsub("{[^{}]*}","")
 			--If this table item has longer text, break it in two based on the text of the start table
 			if ttext_temp:len() > stext:len() then
-				_,_,newtext=ttext_temp:find(stext.."(.*)")
+				newtext=ttext_temp:match(sanitize(stext).."(.*)")
 				for j=#this_table,j+1,-1 do
 					this_table[j+1]=this_table[j]
 				end
-				this_table[j]={tag=ttag,text=ttext:gsub(newtext.."$","")}
+				this_table[j]={tag=ttag,text=ttext:gsub(sanitize(newtext).."$","")}
 				this_table[j+1]={tag="{}",text=newtext}
 			end
 			--If the start table has longer text, then perhaps ttext was split at a tag that's not being transformed
