@@ -57,7 +57,7 @@ TODO: Debug, debug, and keep debugging
 
 script_name="Gradient everything"
 script_description="Define a bounding box, and this will gradient everything."
-script_version="0.2.3"
+script_version="0.2.4"
 
 include("karaskel.lua")
 include("utils.lua")
@@ -665,7 +665,7 @@ function gradient_everything(sub,sel,config)
 	if config["ybord"] then table.insert(transform_tags,"ybord") end
 	if config["xshad"] then table.insert(transform_tags,"xshad") end
 	if config["yshad"] then table.insert(transform_tags,"yshad") end
-		
+	
 	--Number of pixels per strip
 	strip=config["strip_pix"]	
 	
@@ -841,7 +841,8 @@ function gradient_everything(sub,sel,config)
 		end
 		
 		--Create a line table based on first_line, but without relevant tags
-		local _temp_text=line_exclude(first_line.text,{unpack(transform_tags),"clip"})
+		local _temp_text=line_exclude(first_line.text,transform_tags)
+		_temp_text=line_exclude(_temp_text,{"clip"})
 		local this_table={}
 		x=1
 		for thistag,thistext in _temp_text:gmatch("({[^{}]*})([^{}]*)") do
