@@ -76,7 +76,7 @@ debug presets features
 
 script_name="Frame-by-frame transform"
 script_description="Smoothly transforms between the first and last selected lines."
-script_version="0.8.4"
+script_version="0.8.5"
 
 include("karaskel.lua")
 include("utils.lua")
@@ -424,6 +424,13 @@ local function line_exclude(text, exclude)
 							remove_t=true
 							return "\\"..a
 						end
+						if a:match("%)$")~=nil then
+							if a:match("$b()")~=nil then
+								return ""
+							else
+								return ")"
+							end
+						end
 						return ""
 					end
 				end
@@ -458,6 +465,16 @@ local function line_exclude_except(text, exclude)
 						end
 						return "\\"..a
 					end
+				end
+			end
+			if a:match("^t")~=nil then
+				return "\\"..a
+			end
+			if a:match("%)$")~=nil then
+				if a:match("$b()")~=nil then
+					return ""
+				else
+					return ")"
 				end
 			end
 			return ""
