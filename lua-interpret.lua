@@ -159,7 +159,7 @@ include("utils.lua")
 
 script_name="Lua Interpreter"
 script_description="Run Lua code on-the-fly"
-script_version="alpha 0.2"
+script_version="alpha 0.3"
 
 dialog_conf=
 {
@@ -248,7 +248,7 @@ local function line_exclude(text, exclude)
 							return "\\"..a
 						end
 						if a:match("%)$")~=nil then
-							if a:match("$b()")~=nil then
+							if a:match("%b()")~=nil then
 								return ""
 							else
 								return ")"

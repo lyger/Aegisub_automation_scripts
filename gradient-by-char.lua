@@ -18,7 +18,7 @@ convenience above all, so it runs with a single button press and no time-consumi
 
 script_name="Gradient by character"
 script_description="Smoothly transforms tags across your line, by character."
-script_version="0.2"
+script_version="0.2.1"
 
 include("karaskel.lua")
 include("utils.lua")
@@ -99,6 +99,13 @@ local function line_exclude(text, exclude)
 							remove_t=true
 							return "\\"..a
 						end
+						if a:match("%)$")~=nil then
+							if a:match("%b()")~=nil then
+								return ""
+							else
+								return ")"
+							end
+						end
 						return ""
 					end
 				end
@@ -106,7 +113,7 @@ local function line_exclude(text, exclude)
 			return "\\"..a
 		end)
 	if remove_t then
-		text=text:gsub("\\t%b()","")
+		new_text=new_text:gsub("\\t%b()","")
 	end
 	return new_text
 end
@@ -135,10 +142,20 @@ local function line_exclude_except(text, exclude)
 					end
 				end
 			end
+			if a:match("^t")~=nil then
+				return "\\"..a
+			end
+			if a:match("%)$")~=nil then
+				if a:match("%b()")~=nil then
+					return ""
+				else
+					return ")"
+				end
+			end
 			return ""
 		end)
 	if remove_t then
-		text=text:gsub("\\t%b()","")
+		new_text=new_text:gsub("\\t%b()","")
 	end
 	return new_text
 end
