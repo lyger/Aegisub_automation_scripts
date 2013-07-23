@@ -159,7 +159,7 @@ include("utils.lua")
 
 script_name="Lua Interpreter"
 script_description="Run Lua code on-the-fly"
-script_version="alpha 0.1"
+script_version="alpha 0.2"
 
 dialog_conf=
 {
@@ -408,7 +408,7 @@ function lua_interpret(sub,sel)
 		tasklist={}
 		
 		--Function to select line
-		function select()
+		function _select()
 			table.insert(tasklist,function()
 					table.insert(new_sel,li)
 					selected=true
@@ -416,7 +416,7 @@ function lua_interpret(sub,sel)
 		end
 		
 		--Function to duplicate line
-		function duplicate()
+		function _duplicate()
 			table.insert(tasklist,1,function()
 					table.insert(sel,i+1,li+1)
 					sub.insert(li+1,table.copy(line))
@@ -436,7 +436,7 @@ function lua_interpret(sub,sel)
 		end
 		
 		--Function to modify line properties
-		function modify_line(prop,func)
+		function _modify_line(prop,func)
 			table.insert(tasklist,function()
 					line[prop]=func(line[prop])
 				end)
@@ -472,6 +472,11 @@ function lua_interpret(sub,sel)
 		
 		--Now cycle through all tag-text pairs
 		for j,a in ipairs(line_table) do
+		
+			--Wrappers for the once-per-line functions
+			function duplicate() if j==1 then _duplicate() end end
+			function select() if j==1 then _select() end end
+			function modify_line(prop,func) if j==1 then _modify_line(prop,func) end end
 			
 			--Define variables
 			text=a.text
