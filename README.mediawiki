@@ -4,6 +4,10 @@ This is the page where I'll be uploading and updating the various automation scr
 
 I take requests (if you can convince me you have a task that would be useful automated). Also, if you find a bug in any of these scripts, by all means tell me so I can fix it. You can find me as lyger on irc.rizon.net.
 
+== lib-lyger.lua ==
+
+As of 7-23-2013, I have vastly reorganized much of my code. From now on, this file will be essential for most of my advanced scripts. I noticed I was reusing a lot of code in multiple automations, and it was getting to be a pain to update the same function in every script whenever somebody found a bug. From now on, functions that I frequently use will be collected in this library, so that I only need to update one file when somebody finds a bug in one of the functions. The file contains its own version checker, and scripts that load the file will check if the library is present and up-to-date.
+
 == Typesetting Scripts ==
 
 === border-split.lua ===
