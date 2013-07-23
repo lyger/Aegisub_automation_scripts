@@ -18,45 +18,12 @@ convenience above all, so it runs with a single button press and no time-consumi
 
 script_name="Gradient by character"
 script_description="Smoothly transforms tags across your line, by character."
-script_version="0.2.1"
+script_version="1.0"
 
-include("karaskel.lua")
-include("utils.lua")
+--[[REQUIRE lib-lyger.lua OF VERSION 1.0 OR HIGHER]]--
+if pcall(require,"lib-lyger") and chkver("1.0") then
 
---Lookup table for the nature of each kind of parameter
-param_type={
-	["alpha"] = "alpha",
-	["1a"] = "alpha",
-	["2a"] = "alpha",
-	["3a"] = "alpha",
-	["4a"] = "alpha",
-	["c"] = "color",
-	["1c"] = "color",
-	["2c"] = "color",
-	["3c"] = "color",
-	["4c"] = "color",
-	["fscx"] = "number",
-	["fscy"] = "number",
-	["frz"] = "angle",
-	["frx"] = "angle",
-	["fry"] = "angle",
-	["shad"] = "number",
-	["bord"] = "number",
-	["fsp"] = "number",
-	["fs"] = "number",
-	["fax"] = "number",
-	["fay"] = "number",
-	["blur"] = "number",
-	["be"] = "number",
-	["xbord"] = "number",
-	["ybord"] = "number",
-	["xshad"] = "number",
-	["yshad"] = "number",
-	["t"] = "time"
-}
 
---Convert float to neatly formatted string
-local function float2str(f) return string.format("%.3f",f):gsub("%.(%d-)0+$","%.%1"):gsub("%.$","") end
 
 --Creates a deep copy of the given table
 local function deep_copy(source_table)
@@ -67,97 +34,6 @@ local function deep_copy(source_table)
 		new_table[key]=value
 	end
 	return new_table
-end
-
---[[
-Tags that can have any character after the tag declaration:
-\r
-\fn
-Otherwise, the first character after the tag declaration must be:
-a number, decimal point, open parentheses, minus sign, or ampersand
-]]--
-
---Remove listed tags from the given text
-local function line_exclude(text, exclude)
-	remove_t=false
-	local new_text=text:gsub("\\([^\\{}]*)",
-		function(a)
-			if a:find("^r")~=nil then
-				for i,val in ipairs(exclude) do
-					if val=="r" then return "" end
-				end
-			elseif a:find("^fn")~=nil then
-				for i,val in ipairs(exclude) do
-					if val=="fn" then return "" end
-				end
-			else
-				_,_,tag=a:find("^([1-4]?%a+)")
-				for i,val in ipairs(exclude) do
-					if val==tag then
-						--Hacky exception handling for \t statements
-						if val=="t" then
-							remove_t=true
-							return "\\"..a
-						end
-						if a:match("%)$")~=nil then
-							if a:match("%b()")~=nil then
-								return ""
-							else
-								return ")"
-							end
-						end
-						return ""
-					end
-				end
-			end
-			return "\\"..a
-		end)
-	if remove_t then
-		new_text=new_text:gsub("\\t%b()","")
-	end
-	return new_text
-end
-
---Remove all tags except the given ones
-local function line_exclude_except(text, exclude)
-	remove_t=true
-	local new_text=text:gsub("\\([^\\{}]*)",
-		function(a)
-			if a:find("^r")~=nil then
-				for i,val in ipairs(exclude) do
-					if val=="r" then return "\\"..a end
-				end
-			elseif a:find("^fn")~=nil then
-				for i,val in ipairs(exclude) do
-					if val=="fn" then return "\\"..a end
-				end
-			else
-				_,_,tag=a:find("^([1-4]?%a+)")
-				for i,val in ipairs(exclude) do
-					if val==tag then
-						if val=="t" then
-							remove_t=false
-						end
-						return "\\"..a
-					end
-				end
-			end
-			if a:match("^t")~=nil then
-				return "\\"..a
-			end
-			if a:match("%)$")~=nil then
-				if a:match("%b()")~=nil then
-					return ""
-				else
-					return ")"
-				end
-			end
-			return ""
-		end)
-	if remove_t then
-		new_text=new_text:gsub("\\t%b()","")
-	end
-	return new_text
 end
 
 --Remove listed tags from any \t functions in the text
@@ -180,40 +56,6 @@ local function time_exclude(text,exclude)
 	--get rid of empty blocks
 	text=text:gsub("\\t%([%-%.%d,]*%)","")
 	return text
-end
-
---Returns a table of default values
-local function style_lookup(line)
-	local style_table={
-		["alpha"] = "&H00&",
-		["1a"] = alpha_from_style(line.styleref.color1),
-		["2a"] = alpha_from_style(line.styleref.color2),
-		["3a"] = alpha_from_style(line.styleref.color3),
-		["4a"] = alpha_from_style(line.styleref.color4),
-		["c"] = color_from_style(line.styleref.color1),
-		["1c"] = color_from_style(line.styleref.color1),
-		["2c"] = color_from_style(line.styleref.color2),
-		["3c"] = color_from_style(line.styleref.color3),
-		["4c"] = color_from_style(line.styleref.color4),
-		["fscx"] = line.styleref.scale_x,
-		["fscy"] = line.styleref.scale_y,
-		["frz"] = line.styleref.angle,
-		["frx"] = 0,
-		["fry"] = 0,
-		["shad"] = line.styleref.shadow,
-		["bord"] = line.styleref.outline,
-		["fsp"] = line.styleref.spacing,
-		["fs"] = line.styleref.fontsize,
-		["fax"] = 0,
-		["fay"] = 0,
-		["xbord"] =  line.styleref.outline,
-		["ybord"] = line.styleref.outline,
-		["xshad"] = line.styleref.shadow,
-		["yshad"] = line.styleref.shadow,
-		["blur"] = 0,
-		["be"] = 0
-	}
-	return style_table
 end
 
 --Returns a state table, restricted by the tags given in "tag_table"
@@ -406,3 +248,22 @@ end
 --Register the macro
 aegisub.register_macro(script_name,script_description,grad_char)
 aegisub.register_macro(script_name.." - un-gradient","Removes gradient generated by "..script_name,remove_grad_char)
+
+
+
+
+--[[HANDLING FOR lib-lyger.lua NOT FOUND CASE]]--
+else
+require "clipboard"
+function lib_err()
+	aegisub.dialog.display({{class="label",
+		label="lib-lyger.lua is missing or out-of-date.\n"..
+		"Please go to:\n\n"..
+		"https://github.com/lyger/Aegisub_automation_scripts\n\n"..
+		"and download the latest version of lib-lyger.lua.\n"..
+		"(The URL will be copied to your clipboard once you click OK)",
+		x=0,y=0,width=1,height=1}})
+	clipboard.set("https://github.com/lyger/Aegisub_automation_scripts")
+end
+aegisub.register_macro(script_name,script_description,lib_err)
+end

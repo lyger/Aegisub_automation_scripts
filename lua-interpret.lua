@@ -154,12 +154,13 @@ org
 
 ]]
 
-include("karaskel.lua")
-include("utils.lua")
-
 script_name="Lua Interpreter"
 script_description="Run Lua code on-the-fly"
-script_version="alpha 0.3"
+script_version="alpha 1.0"
+
+--[[REQUIRE lib-lyger.lua OF VERSION 1.0 OR HIGHER]]--
+if pcall(require,"lib-lyger") and chkver("1.0") then
+
 
 dialog_conf=
 {
@@ -167,23 +168,7 @@ dialog_conf=
 	{class="textbox",name="code",x=0,y=1,width=40,height=6}
 }
 
---Convert float to neatly formatted string
-function float2str(f) return string.format("%.3f",f):gsub("%.(%d-)0+$","%.%1"):gsub("%.$","") end
 
---Sanitizes string for use in gsub
-function esc(str)
-	str=str:gsub("%%","%%%%")
-	str=str:gsub("%(","%%%(")
-	str=str:gsub("%)","%%%)")
-	str=str:gsub("%[","%%%[")
-	str=str:gsub("%]","%%%]")
-	str=str:gsub("%.","%%%.")
-	str=str:gsub("%*","%%%*")
-	str=str:gsub("%-","%%%-")
-	str=str:gsub("%+","%%%+")
-	str=str:gsub("%?","%%%?")
-	return str
-end
 
 --Returns a function that adds by each number
 function add(...)
@@ -225,147 +210,7 @@ function append(x)
 	return function(y) return y..x end
 end
 
---Remove listed tags from the given text
-local function line_exclude(text, exclude)
-	remove_t=false
-	local new_text=text:gsub("\\([^\\{}]*)",
-		function(a)
-			if a:find("^r")~=nil then
-				for i,val in ipairs(exclude) do
-					if val=="r" then return "" end
-				end
-			elseif a:find("^fn")~=nil then
-				for i,val in ipairs(exclude) do
-					if val=="fn" then return "" end
-				end
-			else
-				_,_,tag=a:find("^([1-4]?%a+)")
-				for i,val in ipairs(exclude) do
-					if val==tag then
-						--Hacky exception handling for \t statements
-						if val=="t" then
-							remove_t=true
-							return "\\"..a
-						end
-						if a:match("%)$")~=nil then
-							if a:match("%b()")~=nil then
-								return ""
-							else
-								return ")"
-							end
-						end
-						return ""
-					end
-				end
-			end
-			return "\\"..a
-		end)
-	if remove_t then
-		new_text=new_text:gsub("\\t%b()","")
-	end
-	return new_text
-end
 
---Returns the position of a line
-local function get_pos(line)
-	local _,_,posx,posy=line.text:find("\\pos%(([%d%.%-]*),([%d%.%-]*)%)")
-	if posx==nil then
-		_,_,posx,posy=line.text:find("\\move%(([%d%.%-]*),([%d%.%-]*),")
-		if posx==nil then
-			_,_,align_n=line.text:find("\\an([%d%.%-]*)")
-			if align_n==nil then
-				_,_,align_dumb=line.text:find("\\a([%d%.%-]*)")
-				if align_dumb==nil then
-					--If the line has no alignment tags
-					posx=line.x
-					posy=line.y
-				else
-					--If the line has the \a alignment tag
-					vid_x,vid_y=aegisub.video_size()
-					align_dumb=tonumber(align_dumb)
-					if align_dumb>8 then
-						posy=vid_y/2
-					elseif align_dumb>4 then
-						posy=line.eff_margin_t
-					else
-						posy=vid_y-line.eff_margin_b
-					end
-					_temp=align_dumb%4
-					if _temp==1 then
-						posx=line.eff_margin_l
-					elseif _temp==2 then
-						posx=line.eff_margin_l+(vid_x-line.eff_margin_l-line.eff_margin_r)/2
-					else
-						posx=vid_x-line.eff_margin_r
-					end
-				end
-			else
-				--If the line has the \an alignment tag
-				vid_x,vid_y=aegisub.video_size()
-				align_n=tonumber(align_n)
-				_temp=align_n%3
-				if align_n>6 then
-					posy=line.eff_margin_t
-				elseif align_n>3 then
-					posy=vid_y/2
-				else
-					posy=vid_y-line.eff_margin_b
-				end
-				if _temp==1 then
-					posx=line.eff_margin_l
-				elseif _temp==2 then
-					posx=line.eff_margin_l+(vid_x-line.eff_margin_l-line.eff_margin_r)/2
-				else
-					posx=vid_x-line.eff_margin_r
-				end
-			end
-		end
-	end
-	return posx,posy
-end
-
---Returns the origin of a line
-local function get_org(line)
-	local _,_,orgx,orgy=line.text:find("\\org%(([%d%.%-]*),([%d%.%-]*)%)")
-	if orgx==nil then
-		return get_pos(line)
-	end
-	return orgx,orgy
-end
-
---Returns a table of default values
-local function style_lookup(line)
-	local style_table={
-		["alpha"] = "&H00&",
-		["1a"] = alpha_from_style(line.styleref.color1),
-		["2a"] = alpha_from_style(line.styleref.color2),
-		["3a"] = alpha_from_style(line.styleref.color3),
-		["4a"] = alpha_from_style(line.styleref.color4),
-		["c"] = color_from_style(line.styleref.color1),
-		["1c"] = color_from_style(line.styleref.color1),
-		["2c"] = color_from_style(line.styleref.color2),
-		["3c"] = color_from_style(line.styleref.color3),
-		["4c"] = color_from_style(line.styleref.color4),
-		["fscx"] = line.styleref.scale_x,
-		["fscy"] = line.styleref.scale_y,
-		["frz"] = line.styleref.angle,
-		["frx"] = 0,
-		["fry"] = 0,
-		["shad"] = line.styleref.shadow,
-		["bord"] = line.styleref.outline,
-		["fsp"] = line.styleref.spacing,
-		["fs"] = line.styleref.fontsize,
-		["fax"] = 0,
-		["fay"] = 0,
-		["xbord"] =  line.styleref.outline,
-		["ybord"] = line.styleref.outline,
-		["xshad"] = line.styleref.shadow,
-		["yshad"] = line.styleref.shadow,
-		["blur"] = 0,
-		["be"] = 0
-	}
-	return style_table
-end
 
 function lua_interpret(sub,sel)
 	
@@ -523,8 +368,11 @@ function lua_interpret(sub,sel)
 						d=float2str(tonumber(d))
 					end
 				end
-				tag,_num=tag:gsub("\\"..b..esc(c),"\\"..b..esc(d))
-				if _num<1 then insert("\\"..b..esc(d)) end
+				--Prevent redundancy
+				if state[b]~=d then
+					tag,_num=tag:gsub("\\"..b..esc(c),"\\"..b..esc(d))
+					if _num<1 then insert("\\"..b..esc(d)) end
+				end
 			end
 			
 			--Remove the given tags
@@ -576,3 +424,20 @@ end
 
 
 aegisub.register_macro(script_name,script_description,lua_interpret)
+
+
+--[[HANDLING FOR lib-lyger.lua NOT FOUND CASE]]--
+else
+require "clipboard"
+function lib_err()
+	aegisub.dialog.display({{class="label",
+		label="lib-lyger.lua is missing or out-of-date.\n"..
+		"Please go to:\n\n"..
+		"https://github.com/lyger/Aegisub_automation_scripts\n\n"..
+		"and download the latest version of lib-lyger.lua.\n"..
+		"(The URL will be copied to your clipboard once you click OK)",
+		x=0,y=0,width=1,height=1}})
+	clipboard.set("https://github.com/lyger/Aegisub_automation_scripts")
+end
+aegisub.register_macro(script_name,script_description,lib_err)
+end
