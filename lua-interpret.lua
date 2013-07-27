@@ -152,22 +152,48 @@ pos
 org
 	Like pos, but for the origin.
 
+flags
+	A global table for values you want to store outside of the loop. It's
+	empty by default.
+
 ]]
 
 script_name="Lua Interpreter"
-script_description="Run Lua code on-the-fly"
-script_version="alpha 1.0"
+script_description="Run Lua code on the fly"
+script_version="alpha 1.1"
 
 --[[REQUIRE lib-lyger.lua OF VERSION 1.0 OR HIGHER]]--
 if pcall(require,"lib-lyger") and chkver("1.0") then
 
 
-dialog_conf=
-{
-	{class="label",label="Enter code below:",x=0,y=0,width=10,height=1},
-	{class="textbox",name="code",x=0,y=1,width=40,height=6}
+--Set the location of the config file
+local config_path=aegisub.decode_path("?user").."luaint-presets.config"
+
+
+textbox={}
+
+dialog_conf={}
+
+--Lookup table for once-per-line tags
+opl={
+	["pos"]=true,
+	["org"]=true,
+	["move"]=true,
+	["a"]=true,
+	["an"]=true,
+	["fad"]=true,
+	["clip"]=true
 }
 
+--Remake the configuration defaults
+function make_conf()
+	textbox={class="textbox",name="code",x=0,y=1,width=40,height=6}
+	dialog_conf=
+	{
+		{class="label",label="Enter code below:",x=0,y=0,width=40,height=1},
+		textbox
+	}
+end
 
 
 --Returns a function that adds by each number
@@ -201,8 +227,9 @@ function multiply(...)
 end
 
 --Returns a function that replaces with x
-function replace(x)
-	return function() return x end
+function replace(...)
+	b=arg
+	return function() return unpack(b) end
 end
 
 --Returns a function that appends x
@@ -210,16 +237,109 @@ function append(x)
 	return function(y) return y..x end
 end
 
+--Write presets table to file
+function table_to_file(path,wtable)
+	local wfile=io.open(path,"wb")
+	wfile:write("return\n")
+	write_table(wtable,wfile,"    ")
+	wfile:close()
+end
+
+--Read presets table from file
+function table_from_file(path)
+	local lfile=io.open(path,"r")
+	if lfile==nil then return nil end
+	local return_presets,err = loadstring(lfile:read("*all"))
+	if err then aegisub.log(err) return nil end
+	lfile:close()
+	return return_presets()
+end
 
 
 function lua_interpret(sub,sel)
 	
+	make_conf()
+	
 	meta,styles=karaskel.collect_head(sub,false)
 	
-	--Show GUI
-	pressed,results=aegisub.dialog.display(dialog_conf,{"Run","Cancel"})
+	--Load presets or create if none
+	presets=table_from_file(config_path)
+	if presets==nil then
+		presets={["Example - Duplicate and Blur"]=
+				"if i%2==1 then\n"..
+				"\tduplicate()\n"..
+				"\tmodify(\"bord\",replace(0))\n"..
+				"\tif state[\"blur\"]==0 then modify(\"blur\",replace(0.6)) end\n"..
+				"\tmodify_line(\"layer\",add(1))\n"..
+				"\tremove(\"3c\",\"3a\",\"shad\")\n"..
+				"else\n"..
+				"\tmodify(\"c\",replace(get(\"3c\")))\n"..
+				"\tmodify(\"1a\",replace(get(\"3a\")))\n"..
+				"\tif state[\"blur\"]==0 then modify(\"blur\",replace(0.6)) end\n"..
+				"end"}
+		table_to_file(config_path,presets)
+	end
 	
-	if pressed=="Cancel" then aegisub.cancel() end
+	--Components of the dialog
+	preselector={
+			class="dropdown",items={},
+			name="pre_sel",
+			x=0,y=7,width=20,height=1
+		}
+	prenamer={
+			class="edit",
+			name="new_prename",
+			x=20,y=7,width=20,height=1
+		}
+	
+	table.insert(dialog_conf,preselector)
+	table.insert(dialog_conf,prenamer)
+	
+	function make_name_list()
+		preselector.items={}
+		prenames=preselector.items
+		maxnew=0
+		for k,_ in pairs(presets) do
+			table.insert(prenames,k)
+			num=k:match("New preset (%d+)")
+			num=tonumber(num) or 0
+			if num>maxnew then maxnew=num end
+		end
+		table.sort(prenames)
+		prenamer.value=string.format("New preset %d",maxnew+1)
+	end
+	
+	make_name_list()
+	
+	--Show GUI
+	repeat
+		
+		pressed,results=aegisub.dialog.display(dialog_conf,
+			{"Run","Load","Save","Delete","Cancel"})
+		
+		if pressed=="Cancel" then aegisub.cancel() end
+		if pressed=="Load" then
+			textbox.value=presets[results["pre_sel"]]
+			preselector.value=results["pre_sel"]
+		end
+		if pressed=="Save" then
+			textbox.value=results["code"]
+			if presets[results["new_prename"]]~=nil then
+				aegisub.dialog.display({{class="label",label="Name already in use!",x=0,y=0,width=1,height=1}})
+			else
+				presets[results["new_prename"]]=results["code"]
+				table_to_file(config_path,presets)
+				make_name_list()
+			end
+		end
+		if pressed=="Delete" then
+			presets[results["pre_sel"]]=nil
+			make_name_list()
+			table_to_file(config_path,presets)
+			preselector.value=nil
+		end
+		
+	until pressed=="Run"
 	
 	command=results["code"]
 	
@@ -352,6 +472,9 @@ function lua_interpret(sub,sel)
 				d=""
 				if type(c)=="table" then
 					e={func(unpack(c))}
+					--If modifying pos or org, store values in relevant objects
+					if b=="pos" then pos.x,pos.y=unpack(e) end
+					if b=="org" then org.x,org.y=unpack(e) end
 					d="("
 					h="("
 					f=""
@@ -371,7 +494,8 @@ function lua_interpret(sub,sel)
 				--Prevent redundancy
 				if state[b]~=d then
 					tag,_num=tag:gsub("\\"..b..esc(c),"\\"..b..esc(d))
-					if _num<1 then insert("\\"..b..esc(d)) end
+					if _num<1 and not opl[b] then insert("\\"..b..esc(d)) end
+					state[b]=d
 				end
 			end
 			
@@ -406,6 +530,20 @@ function lua_interpret(sub,sel)
 			rebuilt_text=rebuilt_text..a.tag..a.text
 		end
 		line.text=rebuilt_text:gsub("{}","")
+		
+		--Update position and org
+		_px,_py=get_pos(line)
+		if _px~=pos.x or _py~=pos.y then
+			ptag=string.format("\\pos(%s,%s)",float2str(pos.x),float2str(pos.y))
+			line.text,_num=line.text:gsub("\\pos%b()",esc(ptag))
+			if _num<1 then line.text=line.text:gsub("{","{"..esc(ptag),1)
+		end
+		_ox,_oy=get_org(line)
+		if _ox~=org.x or _oy~=org.y then
+			otag=string.format("\\org(%s,%s)",float2str(org.x),float2str(org.y))
+			line.text,_num=line.text:gsub("\\org%b()",esc(otag))
+			if _num<1 then line.text=line.text:gsub("{","{"..esc(ptag),1)
+		end
 		
 		--Reinsert
 		sub[li]=line
