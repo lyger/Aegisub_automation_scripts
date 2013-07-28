@@ -160,7 +160,7 @@ flags
 
 script_name="Lua Interpreter"
 script_description="Run Lua code on the fly"
-script_version="alpha 1.1"
+script_version="alpha 1.2"
 
 --[[REQUIRE lib-lyger.lua OF VERSION 1.0 OR HIGHER]]--
 if pcall(require,"lib-lyger") and chkver("1.0") then
@@ -536,13 +536,15 @@ function lua_interpret(sub,sel)
 		if _px~=pos.x or _py~=pos.y then
 			ptag=string.format("\\pos(%s,%s)",float2str(pos.x),float2str(pos.y))
 			line.text,_num=line.text:gsub("\\pos%b()",esc(ptag))
-			if _num<1 then line.text=line.text:gsub("{","{"..esc(ptag),1)
+			if _num<1 then line.text=line.text:gsub("{","{"..esc(ptag),1) end
 		end
 		_ox,_oy=get_org(line)
 		if _ox~=org.x or _oy~=org.y then
 			otag=string.format("\\org(%s,%s)",float2str(org.x),float2str(org.y))
 			line.text,_num=line.text:gsub("\\org%b()",esc(otag))
-			if _num<1 then line.text=line.text:gsub("{","{"..esc(ptag),1)
+			if _num<1 then 
+				if _ox~=pos.x or _oy~=pos.y then
+					line.text=line.text:gsub("{","{"..esc(otag),1) end end
 		end
 		
 		--Reinsert
