@@ -10,9 +10,6 @@ modifying line properties more efficient.
 Calling it a "Lua interpreter" may be a misnomer, but I can't think of
 anything better at the moment.
 
-I'll write a more detailed documentation of all the functions and the
-runtime environment of the interpreter later. Here are the basics:
-
 The code the user inputs is run for each "section" of text, as marked by
 the override blocks. A "section" of text is defined as the part of the
 line that has all the same properties. For example, this line:
@@ -31,14 +28,18 @@ these three sections, changing the properties as appropriate.
 Functions are as follows:
 
 modify(tag, method)
+mod(tag,method)
 	Modify tag using method. tag is a string that indicates the override
 	tag (property) that you want to modify. method is a function that
 	dictates how the modification is done. For example, to double the
 	font size, do:
 	
 	modify("fs",multiply(2))
+	
+	mod is an alias for modify, which you can use to save typing.
 
 modify_line(property, method)
+modln(propery,method)
 	Works like modify(), but acts on line properties, not override tags.
 	For example, to modify the layer of a line:
 	
@@ -60,18 +61,21 @@ add(...)
 	negative number to subtract.
 	
 multiply(...)
+mul(...)
 	Works like add(). There is no divide() function. Simply multiply by
 	a decimal or a fraction. Example:
 	
 	modify("fscx",multiply(0.5))
 
 replace(x)
+rep(x)
 	Returns a function that returns x. When used inside modify(), this
 	will effectively replace the original parameter of the tag with x.
 	
 	modify("fn",replace("Comic Sans MS"))
 
 append(x)
+app(x)
 	Returns a function that appends x to the parameter. For example:
 	
 	modify_line("actor",append(" the great"))
@@ -86,6 +90,7 @@ get(tag)
 	main_color=get("c")
 
 remove(...)
+rem(...)
 	Removes all the tags listed. Example:
 	
 	remove("bord","shad")
@@ -119,6 +124,12 @@ duplicate()
 	In other words, duplicate() will always create a line that looks like
 	your current line did originally, before you modified it at all.
 
+You also have access to all functions in utils.lua and karaskel.lua, such
+as functions for doing math on alpha and color values. I may eventually
+write alpha and color handling into the already complex modify function,
+but for now, code such as modify("alpha",add(50)) will not work.
+
+
 
 Global variables are as follows:
 
@@ -142,25 +153,32 @@ state
 	tag name. For example, to find out what the current x scaling is, use:
 	
 	state["fscx"]
+	
+	This table automatically updates when your code modifies properties
+	of the line. To see the state of the untouched line, use the variable
+	dstate (for default state).
 
 pos
 	This is a table (or object) with two fields: x and y. Use pos.x to
 	access the x coordinate and pos.y to access the y coordinate. The
 	coordinates are guaranteed to match the line's position on screen,
-	even if no position is defined in-line.
+	even if no position is defined in-line. You can perform arithmetic
+	on this object, but it may not behave the way you want it to. You
+	are advised to use modify("pos",...) instead.
 
 org
 	Like pos, but for the origin.
 
 flags
-	A global table for values you want to store outside of the loop. It's
-	empty by default.
+	A global table for values you want to store outside of the loop. Most
+	other variables will change or be reset once the the script starts to
+	run on the next line. It's empty by default.
 
 ]]
 
 script_name="Lua Interpreter"
 script_description="Run Lua code on the fly"
-script_version="alpha 1.2"
+script_version="beta 1.0"
 
 --[[REQUIRE lib-lyger.lua OF VERSION 1.0 OR HIGHER]]--
 if pcall(require,"lib-lyger") and chkver("1.0") then
@@ -345,14 +363,17 @@ function lua_interpret(sub,sel)
 	
 	new_sel={}
 	
-	--Run for all lines in selection
+	--Run for all lines in selection. Hard limit of 5000 just in case
 	i=1
 	flags={}
-	while i<=#sel and #sel<=1000 do
+	while i<=#sel and #sel<=5000 do
 		li=sel[i]
 		line=sub[li]
 		
 		aegisub.progress.set(100*i/#sel)
+		
+		--Alias maxi to the size of the selection
+		maxi=#sel
 		
 		karaskel.preproc_line(sub,meta,styles,line)
 		
@@ -426,8 +447,9 @@ function lua_interpret(sub,sel)
 			end
 		end
 		
-		--Create default state
+		--Create default state and current state
 		state=style_lookup(line)
+		dstate=table.copy(state)
 			
 		--Define position and origin objects
 		pos={}
@@ -450,11 +472,12 @@ function lua_interpret(sub,sel)
 			--Update state
 			for _tag,_param in pairs(state_table[j]) do
 				state[_tag]=_param
+				dstate[_tag]=_param
 			end
 			
 			--Get the parameter of the given tag
 			function get(b)
-				_param=tostring(state[b])
+				_param=tostring(dstate[b])
 				if _param:match("%b()")~=nil then
 					c={}
 					for d in _param:gmatch("[^%(%),]+") do
@@ -467,6 +490,9 @@ function lua_interpret(sub,sel)
 			
 			--Modify the given tag
 			function modify(b,func)
+				--Make sure once-per-lines are only modified once
+				if opl[b] and j~=1 then return end
+				
 				c={get(b)}
 				if #c==1 then c=c[1] end
 				d=""
@@ -510,11 +536,18 @@ function lua_interpret(sub,sel)
 				tag=tag:gsub("}$",b.."}")
 			end
 			
+			--Aliases for common functions
+			mod=modify
+			mul=multiply
+			rep=replace
+			app=append
+			modln=modify_line
+			
 			--Run the user's code
 			_com,err=loadstring(command)
-			_com()
 			
 			if err then aegisub.log(err) aegisub.cancel() end
+			_com()
 			
 			a.text=text
 			a.tag=tag
