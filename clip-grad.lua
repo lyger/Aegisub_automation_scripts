@@ -23,10 +23,13 @@ interfere with the gradient. The same goes for shadow.
 
 script_name="Gradient along clip edge"
 script_description="Color gradient along clip edge. Solid alpha only."
-script_version="0.1.1"
+script_version="0.1.3"
 
 include("karaskel.lua")
 include("utils.lua")
+
+--Global config, to allow storing of data across multiple runs
+gconfig=nil
 
 --Creates a shallow copy of the given table
 local function shallow_copy(source_table)
@@ -132,7 +135,7 @@ end
 --Rounds to the given number of decimal places
 function round(n,dec)
 	dec=dec or 0
-	return math.floor(n*10^dec+sign(n)*0.5)/(10^dec)
+	return math.floor(n*10^dec+0.5)/(10^dec)
 end
 
 --Grows vt outward by the radius r scaled by sc
@@ -144,8 +147,17 @@ function grow(vt,r,sc)
 	
 	--Grow
 	for i=2,#wvt-1,1 do
-		rot1=todegree(math.atan2(wvt[i].y-wvt[i-1].y,wvt[i].x-wvt[i-1].x))
-		rot2=todegree(math.atan2(wvt[i+1].y-wvt[i].y,wvt[i+1].x-wvt[i].x))
+		cpt=wvt[i]
+		ppt=wvt[i].prev
+		npt=wvt[i].next
+		while distance(cpt.x,cpt.y,ppt.x,ppt.y)==0 do
+			ppt=ppt.prev
+		end
+		while distance(cpt.x,cpt.y,npt.x,npt.y)==0 do
+			npt=npt.prev
+		end
+		rot1=todegree(math.atan2(cpt.y-ppt.y,cpt.x-ppt.x))
+		rot2=todegree(math.atan2(npt.y-cpt.y,npt.x-cpt.x))
 		drot=(rot2-rot1)%360
 		
 		--Angle to expand at
@@ -153,16 +165,18 @@ function grow(vt,r,sc)
 		if ch<0 then nrot=nrot+180 end
 		
 		--Adjusted radius
-		ar=r/math.abs(math.cos(torad(ch*90-nrot)))
+		__ar=math.cos(torad(ch*90-nrot)) --<3
+		ar=(__ar<0.00001 and r) or r/math.abs(__ar)
 		
-		newx=wvt[i].x*sc
-		newy=wvt[i].y*sc
+		newx=cpt.x*sc
+		newy=cpt.y*sc
+		
 		if r~=0 then
 			newx=newx+sc*round(ar*math.cos(torad(nrot+rot1)))
 			newy=newy+sc*round(ar*math.sin(torad(nrot+rot1)))
 		end
 		
-		table.insert(nvt,{["class"]=wvt[i].class,
+		table.insert(nvt,{["class"]=cpt.class,
 			["x"]=newx,
 			["y"]=newy})
 	end
@@ -237,6 +251,16 @@ function wrap(vt)
 		table.insert(wvt,shallow_copy(vt[i]))
 	end
 	table.insert(wvt,shallow_copy(vt[1]))
+	
+	--Add linked list capability. Because. Hacky fix gogogogo
+	for i=2,#wvt-1 do
+		wvt[i].prev=wvt[i-1]
+		wvt[i].next=wvt[i+1]
+	end
+	--And link the start and end
+	wvt[2].prev=wvt[#wvt-1]
+	wvt[#wvt-1].next=wvt[2]
+	
 	return wvt
 end
 
@@ -312,124 +336,129 @@ function grad_clip(sub,sel)
 
 	local meta,styles = karaskel.collect_head(sub, false)
 	
-	--Reference line to grab default gradient colors from
-	refline=sub[sel[1]]
-	karaskel.preproc_line(sub,meta,styles,refline)
-	refc1=refline.text:match("\\c(&H%x+&)") or refline.text:match("\\1c(&H%x+&)") or refline.styleref.color1
-	refc2=refline.text:match("\\2c(&H%x+&)") or refline.styleref.color2
-	refc3=refline.text:match("\\3c(&H%x+&)") or refline.styleref.color3
-	refc4=refline.text:match("\\4c(&H%x+&)") or refline.styleref.color4
+	--[[
+	TODO:
+	GET GLOBAL CONFIG TO WORK
+	]]
+	if gconfig==nil then
 	
-	function ass_to_html(s)
-		return string.format("#%02X%02X%02X",extract_color(s))
+		--Reference line to grab default gradient colors from
+		refline=sub[sel[1]]
+		karaskel.preproc_line(sub,meta,styles,refline)
+		refc1=refline.text:match("\\c(&H%x+&)") or refline.text:match("\\1c(&H%x+&)") or refline.styleref.color1
+		refc2=refline.text:match("\\2c(&H%x+&)") or refline.styleref.color2
+		refc3=refline.text:match("\\3c(&H%x+&)") or refline.styleref.color3
+		refc4=refline.text:match("\\4c(&H%x+&)") or refline.styleref.color4
+		
+		--GUI config
+		gconfig=
+		{
+			{
+				class="label",
+				label="Gradient size:",
+				x=0,y=0,width=2,height=1
+			},
+			{
+				class="floatedit",
+				name="gsize",
+				min=0,step=0.5,value=20,
+				x=2,y=0,width=2,height=1
+			},
+			{
+				class="label",
+				label="Gradient position:",
+				x=0,y=1,width=2,height=1
+			},
+			{
+				class="dropdown",
+				name="gpos",
+				items={"outside","middle","inside"},
+				value="outside",
+				x=2,y=1,width=2,height=1
+			},
+			{
+				class="label",
+				label="Step size:",
+				x=0,y=2,width=2,height=1
+			},
+			{
+				class="intedit",
+				name="gstep",
+				min=1,max=4,value=1,
+				x=2,y=2,width=2,height=1
+			},
+			{
+				class="label",
+				label="Color1",
+				x=0,y=3,width=1,height=1
+			},
+			{
+				class="label",
+				label="Color2",
+				x=1,y=3,width=1,height=1
+			},
+			{
+				class="label",
+				label="Color3",
+				x=2,y=3,width=1,height=1
+			},
+			{
+				class="label",
+				label="Color4",
+				x=3,y=3,width=1,height=1
+			},
+			{
+				class="color",
+				name="c1_1",
+				x=0,y=4,width=1,height=1,
+				value=refc1
+			},
+			{
+				class="color",
+				name="c2_1",
+				x=1,y=4,width=1,height=1,
+				value=refc2
+			},
+			{
+				class="color",
+				name="c3_1",
+				x=2,y=4,width=1,height=1,
+				value=refc3
+			},
+			{
+				class="color",
+				name="c4_1",
+				x=3,y=4,width=1,height=1,
+				value=refc4
+			},
+			{
+				class="color",
+				name="c1_2",
+				x=0,y=5,width=1,height=1,
+				value=refc1
+			},
+			{
+				class="color",
+				name="c2_2",
+				x=1,y=5,width=1,height=1,
+				value=refc2
+			},
+			{
+				class="color",
+				name="c3_2",
+				x=2,y=5,width=1,height=1,
+				value=refc3
+			},
+			{
+				class="color",
+				name="c4_2",
+				x=3,y=5,width=1,height=1,
+				value=refc4
+			}
+		}
+	
 	end
 	
-	--GUI config
-	config=
-	{
-		{
-			class="label",
-			label="Gradient size:",
-			x=0,y=0,width=2,height=1
-		},
-		{
-			class="floatedit",
-			name="gsize",
-			min=0,step=0.5,value=20,
-			x=2,y=0,width=2,height=1
-		},
-		{
-			class="label",
-			label="Gradient position:",
-			x=0,y=1,width=2,height=1
-		},
-		{
-			class="dropdown",
-			name="gpos",
-			items={"outside","middle","inside"},
-			value="outside",
-			x=2,y=1,width=2,height=1
-		},
-		{
-			class="label",
-			label="Step size:",
-			x=0,y=2,width=2,height=1
-		},
-		{
-			class="intedit",
-			name="gstep",
-			min=1,max=4,value=1,
-			x=2,y=2,width=2,height=1
-		},
-		{
-			class="label",
-			label="Color1",
-			x=0,y=3,width=1,height=1
-		},
-		{
-			class="label",
-			label="Color2",
-			x=1,y=3,width=1,height=1
-		},
-		{
-			class="label",
-			label="Color3",
-			x=2,y=3,width=1,height=1
-		},
-		{
-			class="label",
-			label="Color4",
-			x=3,y=3,width=1,height=1
-		},
-		{
-			class="color",
-			name="c1_1",
-			x=0,y=4,width=1,height=1,
-			value=refc1
-		},
-		{
-			class="color",
-			name="c2_1",
-			x=1,y=4,width=1,height=1,
-			value=refc2
-		},
-		{
-			class="color",
-			name="c3_1",
-			x=2,y=4,width=1,height=1,
-			value=refc3
-		},
-		{
-			class="color",
-			name="c4_1",
-			x=3,y=4,width=1,height=1,
-			value=refc4
-		},
-		{
-			class="color",
-			name="c1_2",
-			x=0,y=5,width=1,height=1,
-			value=refc1
-		},
-		{
-			class="color",
-			name="c2_2",
-			x=1,y=5,width=1,height=1,
-			value=refc2
-		},
-		{
-			class="color",
-			name="c3_2",
-			x=2,y=5,width=1,height=1,
-			value=refc3
-		},
-		{
-			class="color",
-			name="c4_2",
-			x=3,y=5,width=1,height=1,
-			value=refc4
-		}
-	}
 	--For some reason the utils.lua extract_color refuses to work, so here's my own
 	function get_color(s)
 		r,g,b=s:match("#(%x%x)(%x%x)(%x%x)")
@@ -440,7 +469,7 @@ function grad_clip(sub,sel)
 	end
 	
 	--Show dialog
-	pressed,results=aegisub.dialog.display(config,{"Go","Cancel"})
+	pressed,results=aegisub.dialog.display(gconfig,{"Go","Cancel"})
 	if pressed~="Go" then aegisub.cancel() end
 	
 	--Size of the blur

@@ -21,7 +21,7 @@ create a whopping 41 lines. Use with caution.
 
 script_name="Blur clip"
 script_description="Blurs a vector clip."
-script_version="0.1.3"
+script_version="0.1.6"
 
 include("karaskel.lua")
 include("utils.lua")
@@ -58,15 +58,9 @@ local function sign(n)
 	return n/math.abs(n)
 end
 
---Converts rad to degrees
-local function todegree(n)
-	return n * 180/math.pi
-end
-
---Converts degrees to rad
-local function torad(n)
-	return n * math.pi/180
-end
+--Haha I didn't know these functions existed. May as well just alias them
+todegree=math.deg
+torad=math.rad
 
 --Parses vector shape and makes it into a table
 function make_vector_table(vstring)
@@ -130,7 +124,7 @@ end
 --Rounds to the given number of decimal places
 function round(n,dec)
 	dec=dec or 0
-	return math.floor(n*10^dec+sign(n)*0.5)/(10^dec)
+	return math.floor(n*10^dec+0.5)/(10^dec)
 end
 
 --Grows vt outward by the radius r scaled by sc
@@ -142,8 +136,17 @@ function grow(vt,r,sc)
 	
 	--Grow
 	for i=2,#wvt-1,1 do
-		rot1=todegree(math.atan2(wvt[i].y-wvt[i-1].y,wvt[i].x-wvt[i-1].x))
-		rot2=todegree(math.atan2(wvt[i+1].y-wvt[i].y,wvt[i+1].x-wvt[i].x))
+		cpt=wvt[i]
+		ppt=wvt[i].prev
+		npt=wvt[i].next
+		while distance(cpt.x,cpt.y,ppt.x,ppt.y)==0 do
+			ppt=ppt.prev
+		end
+		while distance(cpt.x,cpt.y,npt.x,npt.y)==0 do
+			npt=npt.prev
+		end
+		rot1=todegree(math.atan2(cpt.y-ppt.y,cpt.x-ppt.x))
+		rot2=todegree(math.atan2(npt.y-cpt.y,npt.x-cpt.x))
 		drot=(rot2-rot1)%360
 		
 		--Angle to expand at
@@ -151,16 +154,18 @@ function grow(vt,r,sc)
 		if ch<0 then nrot=nrot+180 end
 		
 		--Adjusted radius
-		ar=r/math.abs(math.cos(torad(ch*90-nrot)))
+		__ar=math.cos(torad(ch*90-nrot)) --<3
+		ar=(__ar<0.00001 and r) or r/math.abs(__ar)
 		
-		newx=wvt[i].x*sc
-		newy=wvt[i].y*sc
+		newx=cpt.x*sc
+		newy=cpt.y*sc
+		
 		if r~=0 then
 			newx=newx+sc*round(ar*math.cos(torad(nrot+rot1)))
 			newy=newy+sc*round(ar*math.sin(torad(nrot+rot1)))
 		end
 		
-		table.insert(nvt,{["class"]=wvt[i].class,
+		table.insert(nvt,{["class"]=cpt.class,
 			["x"]=newx,
 			["y"]=newy})
 	end
@@ -235,6 +240,16 @@ function wrap(vt)
 		table.insert(wvt,shallow_copy(vt[i]))
 	end
 	table.insert(wvt,shallow_copy(vt[1]))
+	
+	--Add linked list capability. Because. Hacky fix gogogogo
+	for i=2,#wvt-1 do
+		wvt[i].prev=wvt[i-1]
+		wvt[i].next=wvt[i+1]
+	end
+	--And link the start and end
+	wvt[2].prev=wvt[#wvt-1]
+	wvt[#wvt-1].next=wvt[2]
+	
 	return wvt
 end
 
@@ -399,11 +414,21 @@ function blur_clip(sub,sel)
 			line.text=string.format("{\\pos(%d,%d)}",px,py)..line.text
 		end
 		
+		--Round
+		local function rnd(num)
+			num=tonumber(num) or 0
+			if num<0 then
+				num=num-0.5
+				return math.ceil(num)
+			end
+			num=num+0.5
+			return math.floor(num)
+		end
 		--If it's a rectangular clip, convert to vector clip
-		if tvector:match("([%d%-]+),([%d%-]+),([%d%-]+),([%d%-]+)")~=nil then
-			_x1,_y1,_x2,_y2=tvector:match("([%d%-]+),([%d%-]+),([%d%-]+),([%d%-]+)")
+		if tvector:match("([%d%-%.]+),([%d%-%.]+),([%d%-%.]+),([%d%-%.]+)")~=nil then
+			_x1,_y1,_x2,_y2=tvector:match("([%d%-%.]+),([%d%-%.]+),([%d%-%.]+),([%d%-%.]+)")
 			tvector=string.format("m %d %d l %d %d %d %d %d %d",
-				_x1,_y1,_x2,_y1,_x2,_y2,_x1,_y2)
+				rnd(_x1),rnd(_y1),rnd(_x2),rnd(_y1),rnd(_x2),rnd(_y2),rnd(_x1),rnd(_y2))
 		end
 		
 		--The original table and original scale exponent
