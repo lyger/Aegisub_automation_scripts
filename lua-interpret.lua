@@ -465,6 +465,9 @@ function lua_interpret(sub,sel)
 			function select() if j==1 then _select() end end
 			function modify_line(prop,func) if j==1 then _modify_line(prop,func) end end
 			
+			first=false
+			if j==1 then first=true end
+			
 			--Define variables
 			text=a.text
 			tag=a.tag
@@ -534,6 +537,11 @@ function lua_interpret(sub,sel)
 			--Insert the given tag at the end
 			function insert(b)
 				tag=tag:gsub("}$",b.."}")
+			end
+			
+			--Select every
+			function isel(n)
+				if i%n==1 then select() end
 			end
 			
 			--Aliases for common functions
