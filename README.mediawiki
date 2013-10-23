@@ -64,6 +64,14 @@ This works the same as clip-blur, but instead of blurring the edge of the \clip,
 
 Nonetheless, it provides the ability to create a gradient of more or less any arbitrary shape.
 
+=== image2ass_auto.lua ===
+
+This script started as a standalone Lua script that I eventually wrapped in an Aegisub macro to make it easier to use. It's probably the worst lag machine in this entire repo, though it can also be an incredibly powerful tool.
+
+It basically does what the title says. Input a 24-bit or 32-bit Windows-format bitmap image, and this macro will convert it pixel-by-pixel into .ass drawings.
+
+To mitigate the obvious lag implications of this, a basic color similarity compression is run to merge adjacent pixels of similar color, and the user is notified after running the script of the approximate amount of data added, so they can adjust the ocmpression factor accordingly.
+
 === modify-mocha.lua ===
 
 I wrote this script when I had to deal with a Mocha-tracked typeset that appeared in a flashback in a later episode. Obviously, I didn't want to re-typeset the sign, and instead copy-pasted the sign from the earlier episode. Unfortunately, the colors were all grayed out in the flashback, and the sign itself was a couple layers, with borders and shadows and whatnot. Fixing all those colors would have been a find-and-replace nightmare.
