@@ -68,9 +68,11 @@ Nonetheless, it provides the ability to create a gradient of more or less any ar
 
 This script started as a standalone Lua script that I eventually wrapped in an Aegisub macro to make it easier to use. It's probably the worst lag machine in this entire repo, though it can also be an incredibly powerful tool.
 
-It basically does what the title says. Input a 24-bit or 32-bit Windows-format bitmap image, and this macro will convert it pixel-by-pixel into .ass drawings.
+It basically does what the title says. Input a 24-bit or 32-bit Windows-format bitmap image, and this macro will convert it pixel-by-pixel into .ass drawings. Also supports alpha masks, which are black-and-white bitmaps loaded separately.
 
 To mitigate the obvious lag implications of this, a basic color similarity compression is run to merge adjacent pixels of similar color, and the user is notified after running the script of the approximate amount of data added, so they can adjust the ocmpression factor accordingly.
+
+It's worth noting that no compression is performed on the alpha mask. It's the user's responsibility to avoid needless alpha variations in their mask.
 
 === modify-mocha.lua ===
 
