@@ -74,6 +74,8 @@ To mitigate the obvious lag implications of this, a basic color similarity compr
 
 It's worth noting that no compression is performed on the alpha mask. It's the user's responsibility to avoid needless alpha variations in their mask.
 
+The latest version supports non-bitmap images, which are converted to bitmap automatically with the convert tool from ImageMagick. Download the executable [http://www.mediafire.com/download/zdxn75nte1n6cq6/convert.exe here] and save it to your automation\autoload directory.
+
 === modify-mocha.lua ===
 
 I wrote this script when I had to deal with a Mocha-tracked typeset that appeared in a flashback in a later episode. Obviously, I didn't want to re-typeset the sign, and instead copy-pasted the sign from the earlier episode. Unfortunately, the colors were all grayed out in the flashback, and the sign itself was a couple layers, with borders and shadows and whatnot. Fixing all those colors would have been a find-and-replace nightmare.
