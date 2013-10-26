@@ -2,6 +2,11 @@
 README:
 
 ***REQUIRES AEGISUB 3.1.0 r7725 OR LATER***
+***ALSO REQUIRES(1) CONVERT.EXE STANDALONE FROM IMAGEMAGICK***
+
+(1) Only if you want to use non-bitmap images or the resize capability.
+    Save the binary to your Aegisub\automation\autoload directory:
+	http://www.mediafire.com/download/zdxn75nte1n6cq6/convert.exe
 
 
 Image to .ass
@@ -21,6 +26,14 @@ separately. Black represents solid and white represents transparent, just
 like .ass color codes. This is inverted compared to, for example, Photoshop
 alpha masks, so you may have to invert your mask before loading it.
 
+If you're using an alpha mask, the original image should extend beyond the
+mask. For example, if you have textured text on a white background as your
+main image, the text will already be antialised to the white background.
+When you apply the alpha mask, the antialiasing pixels will be antialiased
+again, making a weird white glow. Instead, your main image should be the
+solid texture, thus creating smooth antialiasing pixels when you apply the
+mask.
+
 Be aware that due to subpixel alignment errors in the current version of
 xy-vsfilter, the image may appear transparent or have subpixel gaps if you
 use certain alignments and positionings. Corner alignments and whole-number
@@ -32,7 +45,13 @@ Supports \move but you are strongly advised NOT to use it.
 
 script_name="Image to .ass"
 script_description="Converts bitmap image to .ass lines."
-script_version="1.0"
+script_version="2.0"
+
+require "karaskel"
+	
+--Blatantly copied from Aegisub-Motion
+--[[ Detect whether to use *nix or Windows style paths. ]]--
+winpaths = not aegisub.decode_path('?data'):match('/')
 
 function make_config()
 	return
@@ -47,10 +66,10 @@ function make_config()
 		{x=0,y=2,height=1,width=1,class="label",label="Compression:"},
 		{x=1,y=2,height=1,width=1,class="intedit",name="tol",
 			max=3000,min=1,value=40},
-		{x=0,y=3,height=1,width=1,class="label",label="Sharpening:"},
-		{x=1,y=3,height=1,width=1,class="intedit",name="sharp",
-			max=1000,min=1,value=1},
-		{x=0,y=4,height=1,width=1,class="label",label="Zoom:"},
+		{x=0,y=3,height=1,width=1,class="label",label="Resize image (%):"},
+		{x=1,y=3,height=1,width=1,class="floatedit",name="resize",
+			max=100,min=1,value=100},
+		{x=0,y=4,height=1,width=1,class="label",label="Pixel size:"},
 		{x=1,y=4,height=1,width=1,class="intedit",name="pxsize",
 			max=250,min=1,value=1}
 	}
@@ -71,7 +90,7 @@ function parse_header(fn)
 	_file=io.open(fn,"rb")
 	
 	if _file==nil then
-		aegisub.dialog.display({{x=0,y=0,width=1,height=1,class=label,
+		aegisub.dialog.display({{x=0,y=0,width=1,height=1,class="label",
 			label="Whoops! Couldn't open file. This is probably\n"..
 			"because you are using Aegisub 3.0.4 or earlier.\n"..
 			"Go to http://plorkyeran.com/aegisub/ to download\n"..
@@ -116,10 +135,68 @@ function parse_header(fn)
 	return _iw, _ih, _ws
 end
 
+function convert_to_bmp(filename,scale)
+	
+	local cfname=filename:gsub("%.%a+$",".bmp")
+	
+	local prefix=aegisub.decode_path("?data").."\\automation\\autoload\\"
+	
+	--Make sure convert binary exists
+	local cex=io.open(prefix.."convert.exe")
+	if cex==nil then
+		aegisub.dialog.display({{x=0,y=0,width=1,height=1,class="label",
+			label="convert.exe not found. Make sure the\n"..
+			"executable is in your automation\\autoload\n"..
+			"directory."}},{"OK"})
+		aegisub.cancel()
+	else
+		cex:close()
+	end
+	
+	--Write the self-deleting batch and run it
+	opts="-type TrueColor"
+	if scale then 
+		opts=opts.." -resize "..scale.."%%"
+		cfname=cfname:gsub("%.bmp$","_"..scale..".bmp")
+	end
+	
+	--Make sure the filenames are different
+	if cfname==filename then
+		cfname=cfname:gsub("%.bmp$","_copy.bmp")
+	end
+	
+	local command="\""..prefix.."convert.exe\" \""
+		..filename.."\" "..opts.." BMP3:\""..cfname.."\""
+	
+	convertfile=io.open(prefix.."image2ass_converter.bat","wb")
+	convertfile:write(command.."\ndel %0")
+	convertfile:close()
+	
+	os.execute("\""..prefix.."image2ass_converter.bat\"")
+	
+	return cfname
+	
+end
+
 function run_i2a(subs,sel)
+	
+	ffilter="Bitmap images (.bmp)|*.bmp"
+	if winpaths then ffilter="All images (.bmp; .jpg; .png; .gif)|*.bmp;*.jpg;*.png;*.gif" end
 	--Prompt for bitmap image
-	fname=aegisub.dialog.open("Select bitmap image","","","Bitmap files (.bmp)|*.bmp",false,true)
+	fname=aegisub.dialog.open("Select image","","",ffilter,false,true)
 	if not fname then aegisub.cancel() end
+		
+	testfile=io.open("test.txt","wb")
+	testfile:write("Hi")
+	testfile:close()
+	
+	cleanfiles={}
+	--Convert to .bmp if not .bmp already
+	if not fname:lower():match("%.bmp$") then
+		fname=convert_to_bmp(fname)
+		table.insert(cleanfiles,fname)
+	end
+	
 	
 	--Initialize some values
 	dconfig=make_config()
@@ -135,12 +212,16 @@ function run_i2a(subs,sel)
 		elseif pressed=="Add alpha mask" then
 		
 			--Prompt for bitmap image
-			afname=aegisub.dialog.open("Select bitmap to use as alpha mask","","","Bitmap files (.bmp)|*.bmp",false,true)
+			afname=aegisub.dialog.open("Select image to use as alpha mask","","",ffilter,false,true)
 			if not afname then
 				aegisub.dialog.display({{x=0,y=0,width=1,height=1,class="label",
 					label="Error, invalid file."}},{"OK"})
 			else
 				alpha=true
+				if not afname:lower():match(".bmp$") then
+					afname=convert_to_bmp(afname)
+					table.insert(cleanfiles,afname)
+				end
 				table.insert(dconfig,{x=0,y=5,height=1,width=2,class="label",
 					label="Alpha mask loaded."})
 				table.remove(buttons,2)
@@ -149,6 +230,16 @@ function run_i2a(subs,sel)
 		end
 	until pressed=="Convert"
 	
+	if results["resize"]~=100 then
+		fname=convert_to_bmp(fname,results["resize"])
+		table.insert(cleanfiles,fname)
+		if alpha then
+			afname=convert_to_bmp(afname,results["resize"])
+			table.insert(cleanfiles,afname)
+		end
+	end
+	
+	--Parse headers
 	rowsize,imgheight,wordsize=parse_header(fname)
 	awordsize=0
 	if alpha then
@@ -162,7 +253,7 @@ function run_i2a(subs,sel)
 	end
 	
 	--Check wordsize
-	if wordsize~=(3 or 4) or (alpha and awordsize~=(3 or 4)) then
+	if (wordsize~=3 and wordsize~=4) or (alpha and awordsize~=3 and awordsize~=4) then
 		aegisub.dialog.display({{x=0,y=0,width=1,height=1,class="label",
 				label="Error, images must be 24-bit or 32-bit bitmap."}},{"OK"})
 		aegisub.cancel()
@@ -171,7 +262,6 @@ function run_i2a(subs,sel)
 	--Compile results
 	tolerance=results["tol"]
 	px=results["pxsize"]
-	sharp=results["sharp"]
 	oneline=(results["otype"]=="all on one line")
 	readpos=(results["postype"]=="from line")
 	
@@ -258,7 +348,7 @@ function run_i2a(subs,sel)
 				math.floor((string.byte(ab)+string.byte(ag)+string.byte(ar))/3))
 		end
 		
-		if ((cdist(lr,lg,lb,r,g,b)<tolerance/sharp
+		if ((cdist(lr,lg,lb,r,g,b)<tolerance
 			and cdist(sr,sg,sb,0,0,0)<tolerance and aval==praval))
 			or (aval=="FF" and aval==praval) then
 		
@@ -360,26 +450,41 @@ function run_i2a(subs,sel)
 	
 	aegisub.progress.task("Writing to subtitles...")--No progress bar because this should be near instant
 	
+	--Read in the line
 	line=subs[sel[1]]
+	line.comment=false
+	
+	--Get style info
+	meta,styles=karaskel.collect_head(subs,false)
+	lstyle=styles[line.style]
 	
 	--Estimate filesize
 	fsize=0
+	
+	--New selection
+	newsel={}
 	
 	--If the drawing is to be written all on one line
 	if oneline then
 		oline=shallow_copy(line)
 		
-		rtext=""
+		rtext="{"
 		if readpos then
 			if oline.text:match("\\move") then
 				mtag=oline.text:match("(\\move%b())")
-				rtext=rtext.."{"..mtag.."}"
+				rtext=rtext..mtag
 			end
 			if oline.text:match("\\pos") then
 				ptag=oline.text:match("(\\pos%b())")
-				rtext=rtext.."{"..ptag.."}"
+				rtext=rtext..ptag
 			end
 		end
+		
+		if lstyle.outline~=0 then rtext=rtext.."\\bord0" end
+		if lstyle.shadow~=0 then rtext=rtext.."\\shad0" end
+		
+		rtext=rtext.."}"
+		rtext=rtext:gsub("{}","")
 		
 		prefix="{\\p1}"
 		eol="{\\p0}\\N"
@@ -389,9 +494,11 @@ function run_i2a(subs,sel)
 		end
 		
 		oline.text=rtext
-		fsize=#rtext+44+#oline.style
+		fsize=#rtext+44+#oline.style+#oline.effect+#oline.actor
 		
 		subs.insert(sel[1]+1,oline)
+		
+		newsel={sel[1]+1}
 		
 	--If the drawing is to be written across multiple lines
 	else
@@ -416,7 +523,13 @@ function run_i2a(subs,sel)
 			end
 			align=line.text:match("\\an?%d%d?") or align
 		end
-		prefix=prefix..align..pfmt.."}"
+		prefix=prefix..align..pfmt
+		
+		if lstyle.outline~=0 then prefix=prefix.."\\bord0" end
+		if lstyle.shadow~=0 then prefix=prefix.."\\shad0" end
+		
+		prefix=prefix.."}"
+
 		inserts=1
 		for i,row in ipairs(imgtable) do
 			_,alphanum=row:gsub("\\alpha","\\alpha")
@@ -430,8 +543,9 @@ function run_i2a(subs,sel)
 				nline.text=prefix:format(bx,by+(i-1)*px,bx2,by2+(i-1)*px)
 				nline.text=nline.text..row
 				subs.insert(sel[1]+inserts,nline)
+				table.insert(newsel,sel[1]+inserts)
 				inserts=inserts+1
-				fsize=fsize+#nline.text+44+#nline.style
+				fsize=fsize+#nline.text+44+#nline.style+#nline.effect+#nline.actor
 			end
 		end
 	end
@@ -451,7 +565,11 @@ function run_i2a(subs,sel)
 		label=msg}},
 		{"OK"})
 	
+	--Delete generated bitmap, if applicable
+	for _,cleanf in ipairs(cleanfiles) do os.execute("del \""..cleanf.."\"") end
+	
 	aegisub.set_undo_point(script_name)
+	return newsel
 end
 
 aegisub.register_macro(script_name,script_description,run_i2a)
