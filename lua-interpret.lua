@@ -178,7 +178,7 @@ flags
 
 script_name="Lua Interpreter"
 script_description="Run Lua code on the fly"
-script_version="beta 1.0"
+script_version="beta 1.1"
 
 --[[REQUIRE lib-lyger.lua OF VERSION 1.0 OR HIGHER]]--
 if pcall(require,"lib-lyger") and chkver("1.0") then
@@ -367,8 +367,8 @@ function lua_interpret(sub,sel)
 	i=1
 	flags={}
 	while i<=#sel and #sel<=5000 do
-		li=sel[i]
-		line=sub[li]
+		local li=sel[i]
+		local line=sub[li]
 		
 		aegisub.progress.set(100*i/#sel)
 		
@@ -459,13 +459,16 @@ function lua_interpret(sub,sel)
 		
 		--Now cycle through all tag-text pairs
 		for j,a in ipairs(line_table) do
-		
-			--Wrappers for the once-per-line functions
-			function duplicate() if j==1 then _duplicate() end end
-			function select() if j==1 then _select() end end
-			function modify_line(prop,func) if j==1 then _modify_line(prop,func) end end
+			fenv=getfenv(1)
+			fenv.j=j
+			fenv.line=line
 			
-			first=false
+			--Wrappers for the once-per-line functions
+			fenv.duplicate = function() if j==1 then _duplicate() end end
+			fenv.select = function() if j==1 then _select() end end
+			fenv.modify_line = function(prop,func) if j==1 then _modify_line(prop,func) end end
+			
+			local first=false
 			if j==1 then first=true end
 			
 			--Define variables
@@ -479,7 +482,7 @@ function lua_interpret(sub,sel)
 			end
 			
 			--Get the parameter of the given tag
-			function get(b)
+			fenv.get = function(b)
 				_param=tostring(dstate[b])
 				if _param:match("%b()")~=nil then
 					c={}
@@ -492,7 +495,7 @@ function lua_interpret(sub,sel)
 			end
 			
 			--Modify the given tag
-			function modify(b,func)
+			fenv.modify = function(b,func)
 				--Make sure once-per-lines are only modified once
 				if opl[b] and j~=1 then return end
 				
@@ -529,30 +532,32 @@ function lua_interpret(sub,sel)
 			end
 			
 			--Remove the given tags
-			function remove(...)
+			fenv.remove = function(...)
 				b=arg
 				tag=line_exclude(tag,b)
 			end
 			
 			--Insert the given tag at the end
-			function insert(b)
+			fenv.insert = function(b)
 				tag=tag:gsub("}$",b.."}")
 			end
 			
 			--Select every
-			function isel(n)
+			fenv.isel = function(n)
 				if i%n==1 then select() end
 			end
 			
 			--Aliases for common functions
-			mod=modify
-			mul=multiply
-			rep=replace
-			app=append
-			modln=modify_line
+			fenv.mod=modify
+			fenv.mul=multiply
+			fenv.rep=replace
+			fenv.app=append
+			fenv.modln=modify_line
 			
 			--Run the user's code
 			_com,err=loadstring(command)
+			
+			_com=setfenv(_com,fenv)
 			
 			if err then aegisub.log(err) aegisub.cancel() end
 			_com()
