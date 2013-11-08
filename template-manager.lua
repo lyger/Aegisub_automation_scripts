@@ -45,7 +45,7 @@ Relative (end) means... well you get the idea.
 
 script_name="Template Manager"
 script_description="Manage typesetting templates."
-script_version="Beta 1.0"
+script_version="Beta 1.1"
 
 require 'karaskel'
 require 'utils'
@@ -491,7 +491,7 @@ function new_temp(sub,sel,conf)
 	
 	repeat
 		
-		local pressed,results=aegisub.dialog.display(conf,{"Save"})
+		local pressed,results=aegisub.dialog.display(conf,{"Save","Cancel"},{ok="Save",cancel="Cancel"})
 		
 		if pressed~="Save" then aegisub.cancel() end --Because fuck you
 	
@@ -538,6 +538,7 @@ function mod_temp(sub,sel,conf)
 	end
 	
 	local opts={"New template","Main","Quit"}
+	local opt_ids={cancel="Quit"}
 	
 	--Make sure ctg_data has data
 	local has_temps=false
@@ -552,9 +553,10 @@ function mod_temp(sub,sel,conf)
 		table.insert(opts,3,"Load selected lines")
 		table.insert(opts,4,"New line")
 		table.insert(opts,6,"Delete template")
+		opt_ids.ok="Save"
 	end
 	
-	local pressed,results=aegisub.dialog.display(conf,opts)
+	local pressed,results=aegisub.dialog.display(conf,opts,opt_ids)
 	
 	--Compile results into a table
 	local tline_data={}
@@ -598,7 +600,6 @@ function mod_temp(sub,sel,conf)
 	
 	--New template routine
 	if pressed=="New template" then
-	
 		local nname=""
 		
 		repeat
@@ -608,7 +609,7 @@ function mod_temp(sub,sel,conf)
 					{x=0,y=0,width=7,height=1,class="label",label="Enter template name:"},
 					{x=0,y=1,width=7,height=1,class="edit",name="tname",
 						value="Template "..next_n(titems,"Template")}
-				},{"Save"})
+				},{"Save","Cancel"},{ok="Save",cancel="Cancel"})
 			
 			nname=nresults["tname"]
 			
@@ -763,15 +764,17 @@ function main_menu(sub,sel)
 	}
 	
 	local options={"New template group","Quit"}
+	local option_ids={cancel="Quit"}
 	
 	if #templates>0 then
 		table.insert(options,2,"Modify")
 		table.insert(options,3,"Disable/Enable")
 		table.insert(options,4,"Delete")
+		option_ids.ok="Modify"
 	end
 	
 	--Display dialog
-	local pressed,results=aegisub.dialog.display(dconfig,options)
+	local pressed,results=aegisub.dialog.display(dconfig,options,option_ids)
 		
 	ctg=results["tgroup"]
 	
