@@ -45,7 +45,7 @@ Supports \move but you are strongly advised NOT to use it.
 
 script_name="Image to .ass"
 script_description="Converts bitmap image to .ass lines."
-script_version="2.0"
+script_version="2.1"
 
 require "karaskel"
 	
@@ -410,6 +410,16 @@ function run_i2a(subs,sel)
 				line=line.."\\c&H"..code.."&"
 			end
 			line=line.."}"..shape
+			
+			--Sometimes the algorithm inserts blank tags. I can't be bothered
+			--to figure out why, so just remove them
+			while line:match("0{}m") do
+				line=line:gsub("m 0 0 l 0 1 (%d+) 1 %d+ 0{}m 0 0 l 0 1 (%d+) 1 %d+ 0",
+					function(w1,w2)
+						local nw=tonumber(w1)+tonumber(w2)
+						return string.format("m 0 0 l 0 1 %d 1 %d 0",nw,nw)
+					end)
+			end
 			
 			--Add line to table
 			if imgheight<0 then

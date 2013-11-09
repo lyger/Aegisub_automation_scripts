@@ -29,6 +29,12 @@ Also the actual text of the line is %TEXT%, so if you don't have a %TEXT%
 in your template, it will ignore the line text (useful in certain cases,
 e.g. a masking layer).
 
+If you need to do simple arithmetic, surround your expression with
+exclamation points (like in karaoke templates). For example, to move the
+position down by 5 and to the left by 3, use:
+
+\pos(!%X%-3!,!%Y%+5!)
+
 Concerning timing:
 
 All times are in frames, since this is a typesetting script.
@@ -45,7 +51,7 @@ Relative (end) means... well you get the idea.
 
 script_name="Template Manager"
 script_description="Manage typesetting templates."
-script_version="Beta 1.1"
+script_version="1.0"
 
 require 'karaskel'
 require 'utils'
@@ -55,6 +61,12 @@ psep=aegisub.decode_path('?data'):match('/') and '/' or '\\'
 
 --The path to the template manager directory
 tmpath=aegisub.decode_path("?user")..psep.."tempman"..psep
+
+--Lines per page
+LPP=5
+
+--And the current page number
+page=1
 
 --Table of templates
 templates={}
@@ -146,7 +158,8 @@ end
 
 --And format it
 function tfmt(l,tt,st,ed,sty,ln)
-	return string.format("\t%d,%s,%d,%d,%s,%s",l,ttdict[tt],st,ed,sty,ln)
+	if tt:len()>2 then tt=ttdict[tt] end
+	return string.format("\t%d,%s,%d,%d,%s,%s",l,tt,st,ed,sty,ln)
 end
 
 --Save current template group
@@ -226,7 +239,7 @@ function make_template(tname)
 		
 		local dconf=
 		{
-			{x=0,y=1,width=1,height=1,class="label",label="Select template:"},
+			{x=0,y=0,width=1,height=1,class="label",label="Select template:"},
 			{x=0,y=1,width=1,height=1,class="dropdown",name="temp_select",
 				items=tmlist,value=last_temps[tname] or tmlist[1]}
 		}
@@ -464,7 +477,7 @@ function fill_row(n,l,tt,st,ed,sty,ln)
 	lab1,ledit,lab2,styedit,lab3,ttedit,lab4,stedit,lab5,ededit,lnedit=
 		tedit_row(n)
 	
-	if #tt<3 then tt=ttdict[tt] end
+	if tt:len()<3 then tt=ttdict[tt] end
 	
 	ledit.value=l
 	styedit.value=sty
@@ -510,8 +523,6 @@ end
 
 --Modify template menu
 function mod_temp(sub,sel,conf)
-	--Creats ctg_data, even if it's empty
-	load_temp()
 	
 	local titems={}
 	
@@ -556,7 +567,37 @@ function mod_temp(sub,sel,conf)
 		opt_ids.ok="Save"
 	end
 	
-	local pressed,results=aegisub.dialog.display(conf,opts,opt_ids)
+	--To handle pages, the display configuration is a separate variable
+	local dconf=conf
+	
+	--If too many rows to display, then implement the page system
+	if rows>LPP then
+		--Make sure page number is within bounds
+		local maxpage=math.ceil(rows/LPP)
+		if maxpage<page then page=maxpage end
+		
+		dconf={}
+		
+		table.insert(dconf,table.copy(conf[1]))
+		table.insert(dconf,{x=5,y=0,width=1,height=1,class="label",
+			label=string.format("Page %d/%d",page,maxpage)})
+		
+		--Check all the control entries in the config and add the ones that fall on this page
+		for _,ctrl in ipairs(conf) do
+			if ctrl.name then
+				local ctrlrow=tonumber(ctrl.name:match("_(%d+)")) or nil
+				if ctrlrow and math.floor((ctrlrow-1)/LPP)+1==page then
+					local nctrl=table.copy(ctrl)
+					nctrl.y=nctrl.y-3*(page-1)*LPP
+					table.insert(dconf,nctrl)
+				end
+			end
+		end
+		if page>1 then table.insert(opts,"<--") end
+		if page<maxpage then table.insert(opts,"-->") end
+	end
+	
+	local pressed,results=aegisub.dialog.display(dconf,opts,opt_ids)
 	
 	--Compile results into a table
 	local tline_data={}
@@ -570,33 +611,41 @@ function mod_temp(sub,sel,conf)
 		end
 	end
 	
-	--Update conf to match results
-	local function update_conf(stemp)
-		
-		conf=tselector()
-		
-		stemp=stemp or conf[1].items[1]
-		
-		conf[1].value=stemp
-		
-		ctg_data[stemp]={}
-		
-		for i,v in ipairs(tline_data) do
-			table.insert(ctg_data[stemp],
-				tfmt(v.layer,v.timetype,v.start,v["end"],v.style,v.line))
-			for _,ctrl in ipairs(
-				{fill_row(i,v.layer,v.timetype,v.start,v["end"],v.style,v.line)}) do
-				
-				table.insert(conf,ctrl)
-			end
-		end
-	end
-	
 	--Set last menu
 	last_menu=function(sub,sel) mod_temp(sub,sel,conf) end
 	
 	--Name of selected template
 	local stemp=results["temp_select"]
+	
+	--Update conf to match results
+	local function update_conf()
+		
+		conf=tselector()
+		
+		--stemp=stemp or conf[1].items[1]
+		
+		conf[1].value=stemp
+		
+		--ctg_data[stemp]={}
+		
+		for i,v in ipairs(tline_data) do
+			--table.insert(ctg_data[stemp],
+			--	tfmt(v.layer,v.timetype,v.start,v["end"],v.style,v.line))
+			ctg_data[stemp][i]=tfmt(v.layer,v.timetype,v.start,v["end"],v.style,v.line)
+			--[[for _,ctrl in ipairs(
+				{fill_row(i,v.layer,v.timetype,v.start,v["end"],v.style,v.line)}) do
+				
+				table.insert(conf,ctrl)
+			end]]
+		end
+		
+		for i,v in ipairs(ctg_data[stemp]) do
+			for _,ctrl in ipairs({fill_row(i,parse(v))}) do
+				
+				table.insert(conf,ctrl)
+			end
+		end
+	end
 	
 	--New template routine
 	if pressed=="New template" then
@@ -604,7 +653,7 @@ function mod_temp(sub,sel,conf)
 		
 		repeat
 			
-			local _,nresults=aegisub.dialog.display(
+			local npressed,nresults=aegisub.dialog.display(
 				{
 					{x=0,y=0,width=7,height=1,class="label",label="Enter template name:"},
 					{x=0,y=1,width=7,height=1,class="edit",name="tname",
@@ -613,7 +662,12 @@ function mod_temp(sub,sel,conf)
 			
 			nname=nresults["tname"]
 			
-		until not ctg_data[nname] and #nname>0
+			if npressed=="Cancel" then
+				update_conf()
+				return mod_temp(sub,sel,conf)
+			end
+			
+		until (not ctg_data[nname] and #nname>0)
 		
 		ctg_data[nname]={}
 		
@@ -643,7 +697,7 @@ function mod_temp(sub,sel,conf)
 	--Save routine
 	elseif pressed=="Save" then
 		
-		update_conf(results["temp_select"])
+		update_conf()
 		
 		save_ctg()
 		
@@ -722,6 +776,8 @@ function mod_temp(sub,sel,conf)
 				table.insert(conf,ctrl)
 			end
 			
+			ctg_data[stemp][i]=tfmt(cline.layer,ttype,cstart,cend,cline.style,cline.text)
+			
 		end
 			
 		return mod_temp(sub,sel,conf)
@@ -737,6 +793,32 @@ function mod_temp(sub,sel,conf)
 		for _,ctrl in ipairs({tedit_row(rows+1)}) do
 			table.insert(conf,ctrl)
 		end
+		
+		ctg_data[stemp][rows+1]="0,rb,0,0,Default,"
+		
+		return mod_temp(sub,sel,conf)
+	
+	--Previous page
+	elseif pressed=="<--" then
+	
+		update_conf()
+		if stemp then
+			conf[1].value=stemp
+		end
+		
+		page=page-1
+		
+		return mod_temp(sub,sel,conf)
+	
+	--Next page
+	elseif pressed=="-->" then
+	
+		update_conf()
+		if stemp then
+			conf[1].value=stemp
+		end
+		
+		page=page+1
 		
 		return mod_temp(sub,sel,conf)
 		
@@ -785,7 +867,10 @@ function main_menu(sub,sel)
 	
 	--Open different menus depending on input
 	if pressed=="New template group" then new_temp(sub,sel)
-	elseif pressed=="Modify" then mod_temp(sub,sel)
+	elseif pressed=="Modify" then 
+		--Creats ctg_data, even if it's empty
+		load_temp()
+		mod_temp(sub,sel)
 	
 	--Disable/Enable
 	elseif pressed=="Disable/Enable" then
