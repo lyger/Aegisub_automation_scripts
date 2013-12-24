@@ -51,7 +51,7 @@ Relative (end) means... well you get the idea.
 
 script_name="Template Manager"
 script_description="Manage typesetting templates."
-script_version="1.0"
+script_version="1.2"
 
 require 'karaskel'
 require 'utils'
@@ -227,6 +227,14 @@ function make_template(tname)
 	
 	return
 	function(sub,sel)
+		
+		--Make sure a video is loaded
+		if not aegisub.frame_from_ms(1) then
+			aegisub.dialog.display({{x=0,y=0,width=1,height=1,class="label",
+				label="Please load a video."}},{"OK"})
+			aegisub.cancel()
+		end
+		
 		_,styles=karaskel.collect_head(sub,false)
 		load_temp(tname)
 		
@@ -628,7 +636,7 @@ function mod_temp(sub,sel,conf)
 		
 		--ctg_data[stemp]={}
 		
-		for i,v in ipairs(tline_data) do
+		for i,v in pairs(tline_data) do
 			--table.insert(ctg_data[stemp],
 			--	tfmt(v.layer,v.timetype,v.start,v["end"],v.style,v.line))
 			ctg_data[stemp][i]=tfmt(v.layer,v.timetype,v.start,v["end"],v.style,v.line)
@@ -723,6 +731,13 @@ function mod_temp(sub,sel,conf)
 	elseif pressed=="Load selected lines" then
 		
 		if not sel or #sel<1 then aegisub.cancel() end --Because fuck you
+		
+		--Make sure a video is loaded
+		if not aegisub.frame_from_ms(1) then
+			aegisub.dialog.display({{x=0,y=0,width=1,height=1,class="label",
+				label="Please load a video."}},{"OK"})
+			aegisub.cancel()
+		end
 		
 		local _,lsresults=aegisub.dialog.display(
 			{
