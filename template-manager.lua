@@ -51,7 +51,7 @@ Relative (end) means... well you get the idea.
 
 script_name="Template Manager"
 script_description="Manage typesetting templates."
-script_version="1.2"
+script_version="1.3"
 
 require 'karaskel'
 require 'utils'
@@ -601,6 +601,18 @@ function mod_temp(sub,sel,conf)
 				end
 			end
 		end
+		
+		--Reinsert labels. Wow this is hacky
+		local page_rows=(page==maxpage) and rows%LPP or LPP
+		for n=1,page_rows do
+			table.insert(dconf,{x=0,y=n*3-2,width=1,height=1,class="label",label="Layer"})
+			table.insert(dconf,{x=1,y=n*3-2,width=1,height=1,class="label",label="Style:"})
+			table.insert(dconf,{x=1,y=n*3-1,width=1,height=1,class="label",label="Timing:"})
+			table.insert(dconf,{x=3,y=n*3-2,width=1,height=1,class="label",label="Start:"})
+			table.insert(dconf,{x=3,y=n*3-1,width=1,height=1,class="label",label="End:"})
+		end
+		
+		
 		if page>1 then table.insert(opts,"<--") end
 		if page<maxpage then table.insert(opts,"-->") end
 	end
