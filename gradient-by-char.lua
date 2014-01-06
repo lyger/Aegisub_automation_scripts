@@ -18,7 +18,9 @@ convenience above all, so it runs with a single button press and no time-consumi
 
 script_name="Gradient by character"
 script_description="Smoothly transforms tags across your line, by character."
-script_version="1.0"
+script_version="1.1"
+
+unicode = require 'aegisub.unicode'
 
 --[[REQUIRE lib-lyger.lua OF VERSION 1.0 OR HIGHER]]--
 if pcall(require,"lib-lyger") and chkver("1.0") then
@@ -174,55 +176,73 @@ function grad_char(sub,sel)
 				return ivalue
 			end
 			
-			--Add a new tag in front of all the nonspace characters except the first
-			this_table[i-1].text=this_table[i-1].text:gsub("(.)(.*)", function(c,a)
-				idx=1				
-				total=string.len(a)+1
+			--TODO: UNICODE HANDLING
+			
+			--Replace \N with newline character, so it's treated as one character
+			local ttext=this_table[i-1].text:gsub("\\N","\n")
+			
+			--Rebuilt text
+			local rtext=""
+			
+			--Skip the first character
+			local first=true
+			
+			--Starting values
+			idx=1
+			total=unicode.len(ttext)
 				
-				--Replaces "\N" with the newline character
-				a=a:gsub("\\N","\n")
+			for ch in unicode.chars(ttext) do
 				
-				a=a:gsub("(.)", function(b)
+				if not first then
 					--Interpolation factor
 					factor=idx/total
 					
 					idx=idx+1
 					
-					if b:find("%s")~=nil then return b end
+					--Do nothing if the character is a space
+					if ch:find("%s")~=nil then
+						rtext=rtext..ch
+					else
 					
-					--The tags in and out of the time statement
-					local non_time_tags=""
-					
-					--Go through all the state tags in this tag block
-					for ttag,tparam in pairs(this_state[i]) do
-						--Figure out the starting state of the param
-						local sparam=current_state[ttag]
-						if sparam==nil then sparam=this_style[ttag] end
-						if type(sparam)~="number" then sparam=sparam:gsub("%)","") end--Just in case a \t tag snuck in
+						--The tags in and out of the time statement
+						local non_time_tags=""
 						
-						--Prevent redundancy
-						if sparam~=tparam then
-							--The string version of the interpolated parameter
-							local iparam=handle_interpolation(factor,ttag,sparam,tparam)
+						--Go through all the state tags in this tag block
+						for ttag,tparam in pairs(this_state[i]) do
+							--Figure out the starting state of the param
+							local sparam=current_state[ttag]
+							if sparam==nil then sparam=this_style[ttag] end
+							if type(sparam)~="number" then sparam=sparam:gsub("%)","") end--Just in case a \t tag snuck in
 							
-							if iparam~=tostring(char_state[ttag]) then
-								non_time_tags=non_time_tags.."\\"..ttag..iparam
-								char_state[ttag]=iparam
+							--Prevent redundancy
+							if sparam~=tparam then
+								--The string version of the interpolated parameter
+								local iparam=handle_interpolation(factor,ttag,sparam,tparam)
+								
+								if iparam~=tostring(char_state[ttag]) then
+									non_time_tags=non_time_tags.."\\"..ttag..iparam
+									char_state[ttag]=iparam
+								end
 							end
 						end
+					
+						if non_time_tags:len() < 1 then
+							--If no tags were added, do nothing
+							rtext=rtext..ch
+						else
+							--The final tag, with a star to indicate it was added through interpolation
+							rtext=rtext.."{\*"..non_time_tags.."}"..ch
+						end
+						
 					end
-					
-					if non_time_tags:len() < 1 then return b end
-					
-					--The final tag, with a star to indicate it was added through interpolation
-					return "{\*"..non_time_tags.."}"..b
-				end)
-				
-				--Turns newline back to "\N"
-				a=a:gsub("\n","\\N")
-				
-				return c..a
-			end)
+				else
+					rtext=rtext..ch
+				end
+				first=false
+			end
+			
+			this_table[i-1].text=rtext:gsub("\n","\\N")
+			
 		end
 		
 		rebuilt_text=""
