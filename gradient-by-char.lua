@@ -18,9 +18,9 @@ convenience above all, so it runs with a single button press and no time-consumi
 
 script_name="Gradient by character"
 script_description="Smoothly transforms tags across your line, by character."
-script_version="1.1"
+script_version="1.2"
 
-unicode = require 'aegisub.unicode'
+re = require 'aegisub.re'
 
 --[[REQUIRE lib-lyger.lua OF VERSION 1.0 OR HIGHER]]--
 if pcall(require,"lib-lyger") and chkver("1.0") then
@@ -100,8 +100,8 @@ function grad_char(sub,sel)
 		--Make line table
 		this_table={}
 		x=1
-		for thistag,thistext in this_line.text:gmatch("({[^{}]*})([^{}]*)") do
-			this_table[x]={tag=thistag,text=thistext}
+		for thistag,thistext in this_line.text:gsub("}","}\t"):gmatch("({[^{}]*})([^{}]*)") do
+			this_table[x]={tag=thistag,text=thistext:gsub("\t","")}
 			x=x+1
 		end
 		
@@ -176,72 +176,80 @@ function grad_char(sub,sel)
 				return ivalue
 			end
 			
-			--TODO: UNICODE HANDLING
-			
 			--Replace \N with newline character, so it's treated as one character
 			local ttext=this_table[i-1].text:gsub("\\N","\n")
 			
-			--Rebuilt text
-			local rtext=""
+			if ttext:len()>0 then
 			
-			--Skip the first character
-			local first=true
-			
-			--Starting values
-			idx=1
-			total=unicode.len(ttext)
+				--Rebuilt text
+				local rtext=""
 				
-			for ch in unicode.chars(ttext) do
+				--Skip the first character
+				local first=true
 				
-				if not first then
-					--Interpolation factor
-					factor=idx/total
+				--Starting values
+				idx=1
+				
+				matches=re.find(ttext,'\\X')
+				
+				total=#matches
 					
-					idx=idx+1
+				for _,match in ipairs(matches) do
 					
-					--Do nothing if the character is a space
-					if ch:find("%s")~=nil then
-						rtext=rtext..ch
-					else
+					ch=match.str
 					
-						--The tags in and out of the time statement
-						local non_time_tags=""
+					if not first then
+						--Interpolation factor
+						factor=idx/total
 						
-						--Go through all the state tags in this tag block
-						for ttag,tparam in pairs(this_state[i]) do
-							--Figure out the starting state of the param
-							local sparam=current_state[ttag]
-							if sparam==nil then sparam=this_style[ttag] end
-							if type(sparam)~="number" then sparam=sparam:gsub("%)","") end--Just in case a \t tag snuck in
-							
-							--Prevent redundancy
-							if sparam~=tparam then
-								--The string version of the interpolated parameter
-								local iparam=handle_interpolation(factor,ttag,sparam,tparam)
-								
-								if iparam~=tostring(char_state[ttag]) then
-									non_time_tags=non_time_tags.."\\"..ttag..iparam
-									char_state[ttag]=iparam
-								end
-							end
-						end
-					
-						if non_time_tags:len() < 1 then
-							--If no tags were added, do nothing
+						idx=idx+1
+						
+						--Do nothing if the character is a space
+						if ch:find("%s")~=nil then
 							rtext=rtext..ch
 						else
-							--The final tag, with a star to indicate it was added through interpolation
-							rtext=rtext.."{\*"..non_time_tags.."}"..ch
-						end
 						
+							--The tags in and out of the time statement
+							local non_time_tags=""
+							
+							--Go through all the state tags in this tag block
+							for ttag,tparam in pairs(this_state[i]) do
+								--Figure out the starting state of the param
+								local sparam=current_state[ttag]
+								if sparam==nil then sparam=this_style[ttag] end
+								if type(sparam)~="number" then sparam=sparam:gsub("%)","") end--Just in case a \t tag snuck in
+								
+								--Prevent redundancy
+								if sparam~=tparam then
+									--The string version of the interpolated parameter
+									local iparam=handle_interpolation(factor,ttag,sparam,tparam)
+									
+									if iparam~=tostring(char_state[ttag]) then
+										non_time_tags=non_time_tags.."\\"..ttag..iparam
+										char_state[ttag]=iparam
+									end
+								end
+							end
+						
+							if non_time_tags:len() < 1 then
+								--If no tags were added, do nothing
+								rtext=rtext..ch
+							else
+								--The final tag, with a star to indicate it was added through interpolation
+								rtext=rtext.."{\*"..non_time_tags.."}"..ch
+							end
+							
+						end
+					else
+						rtext=rtext..ch
 					end
-				else
-					rtext=rtext..ch
+					first=false
 				end
-				first=false
-			end
 			
-			this_table[i-1].text=rtext:gsub("\n","\\N")
+				--Put \N back in
+				this_table[i-1].text=rtext:gsub("\n","\\N")
+			
+			end
 			
 		end
 		
