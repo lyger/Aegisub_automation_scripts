@@ -21,10 +21,10 @@ create a whopping 41 lines. Use with caution.
 
 script_name="Blur clip"
 script_description="Blurs a vector clip."
-script_version="0.1.6"
+script_version="1.0"
 
-include("karaskel.lua")
-include("utils.lua")
+--[[REQUIRE lib-lyger.lua OF VERSION 1.1 OR HIGHER]]--
+if pcall(require,"lib-lyger") and chkver("1.1") then
 
 --Creates a shallow copy of the given table
 local function shallow_copy(source_table)
@@ -262,64 +262,6 @@ function unwrap(wvt)
 	return vt
 end
 
---Returns the position of a line
-local function get_pos(line)
-	local _,_,posx,posy=line.text:find("\\pos%(([%d%.%-]*),([%d%.%-]*)%)")
-	if posx==nil then
-		_,_,posx,posy=line.text:find("\\move%(([%d%.%-]*),([%d%.%-]*),")
-		if posx==nil then
-			_,_,align_n=line.text:find("\\an([%d%.%-]*)")
-			if align_n==nil then
-				_,_,align_dumb=line.text:find("\\a([%d%.%-]*)")
-				if align_dumb==nil then
-					--If the line has no alignment tags
-					posx=line.x
-					posy=line.y
-				else
-					--If the line has the \a alignment tag
-					vid_x,vid_y=aegisub.video_size()
-					align_dumb=tonumber(align_dumb)
-					if align_dumb>8 then
-						posy=vid_y/2
-					elseif align_dumb>4 then
-						posy=line.eff_margin_t
-					else
-						posy=vid_y-line.eff_margin_b
-					end
-					_temp=align_dumb%4
-					if _temp==1 then
-						posx=line.eff_margin_l
-					elseif _temp==2 then
-						posx=line.eff_margin_l+(vid_x-line.eff_margin_l-line.eff_margin_r)/2
-					else
-						posx=vid_x-line.eff_margin_r
-					end
-				end
-			else
-				--If the line has the \an alignment tag
-				vid_x,vid_y=aegisub.video_size()
-				align_n=tonumber(align_n)
-				_temp=align_n%3
-				if align_n>6 then
-					posy=line.eff_margin_t
-				elseif align_n>3 then
-					posy=vid_y/2
-				else
-					posy=vid_y-line.eff_margin_b
-				end
-				if _temp==1 then
-					posx=line.eff_margin_l
-				elseif _temp==2 then
-					posx=line.eff_margin_l+(vid_x-line.eff_margin_l-line.eff_margin_r)/2
-				else
-					posx=vid-x-line.eff_margin_r
-				end
-			end
-		end
-	end
-	return posx,posy
-end
-
 --Main execution function
 function blur_clip(sub,sel)
 
@@ -529,3 +471,21 @@ function blur_clip(sub,sel)
 end
 
 aegisub.register_macro(script_name,script_description,blur_clip)
+
+
+
+--[[HANDLING FOR lib-lyger.lua NOT FOUND CASE]]--
+else
+require "clipboard"
+function lib_err()
+	aegisub.dialog.display({{class="label",
+		label="lib-lyger.lua is missing or out-of-date.\n"..
+		"Please go to:\n\n"..
+		"https://github.com/lyger/Aegisub_automation_scripts\n\n"..
+		"and download the latest version of lib-lyger.lua.\n"..
+		"(The URL will be copied to your clipboard once you click OK)",
+		x=0,y=0,width=1,height=1}})
+	clipboard.set("https://github.com/lyger/Aegisub_automation_scripts")
+end
+aegisub.register_macro(script_name,script_description,lib_err)
+end

@@ -14,7 +14,7 @@ The filename is a bit vain, perhaps, but I couldn't come up with anything else.
 require "karaskel"
 require "utils"
 
-script_version="1.0"
+script_version="1.1"
 --Function to check if script is up to date or not
 function chkver(req)
 	t_req={}
@@ -249,9 +249,9 @@ function get_pos(line)
 	if posx==nil then
 		_,_,posx,posy=line.text:find("\\move%(([%d%.%-]*),([%d%.%-]*),")
 		if posx==nil then
-			_,_,align_n=line.text:find("\\an([%d%.%-]*)")
+			_,_,align_n=line.text:find("\\an([%d%.%-]+)")
 			if align_n==nil then
-				_,_,align_dumb=line.text:find("\\a([%d%.%-]*)")
+				_,_,align_dumb=line.text:find("\\a([%d%.%-]+)")
 				if align_dumb==nil then
 					--If the line has no alignment tags
 					posx=line.x
