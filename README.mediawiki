@@ -56,6 +56,16 @@ That being said, I will recommend that typesetters use this script instead of gr
 
 This automation has no popup interface (unlike gradient-everything). It's locked to transform any different parameters that it detects. It's also locked to "rotations less than 180 degrees" mode (you can read more about this in the readme at the top of the script).
 
+=== lua-interpret.lua ===
+
+It seems I never wrote a description for this, so here goes.
+
+This was one of my most ambitious projects, and despite a plethora of bugs and user-unfriendliness, today it's one of my most-used scripts. I noticed I was repeating a lot of code in my automations, and many tasks kept popping up over and over again, so I thought to myself, "Why don't I create a script that does all the grunt work for you, so you only have to code the important part?"
+
+Well, it sort of worked. In most cases nowadays, when a typesetter asks me for a specific task automated, I'm able to accomplish it in under fifty lines using lua-interpreter. If you ever come to me with a request for automation, I'll either direct you to existing scripts that can do what you want, or give you some code to use with this script.
+
+It's also a super handy tool for adjusting massive multi-line typesets or doing arithmetic on tag parameters. Need to double the font size? mod("fs",mul(2)). Add 5 degrees to all the rotations in a line? mod("frz",add(5)). One line of code will apply to all the tags in all the selected lines.
+
 === clip-blur.lua ===
 
 The \clip tag naturally generates a very sharp edge. For a typesetter who wants his signs to blend in, that sharp edge can stick out like a sore thumb.
