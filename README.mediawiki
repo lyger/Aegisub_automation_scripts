@@ -18,6 +18,14 @@ This takes a single bordered line and splits it into two lines. For a single bor
 
 Compared to my other scripts, the behavior is a bit odd. Instead of applying to the selected lines, the script applies to lines with "bord" in the actor field. This is mostly an artifact of my days working with karaoke templates, but I honestly rather like the workflow.
 
+=== template-manager.lua ===
+
+This one gets a spot up here because of its usefulness. This automation is built around typesetting efficiency. The idea is you do all the hard work once, and everything afterwards becomes super easy.
+
+This is actually a macro that creates other macros which will be added to the automation menu. The main "Template manager" automation doesn't change anything about your subtitles. Instead, it lets you create and modify templates for repeated typesets. The templates are very customizable and allow variables and simple arithmetic.
+
+Once you've finished creating and modifying your template group, reload your automations and the newly created macro will appear on the automations menu, allowing you to hotkey it. Most aspects of the script remember your last action.
+
 === fbf-transform.lua ===
 
 The first "advanced" automation I wrote since writing border-split. This script is very powerful and versatile, but it expects a certain amount out of the typesetter. Read the instructions at the top of the script file for full details.
@@ -63,6 +71,10 @@ This script is not as versatile as I'd have liked, due to limitations caused by 
 This works the same as clip-blur, but instead of blurring the edge of the \clip, it gradients from one color to another (unlike gradient-everything, it does not gradient any other parameters. Sorry). To correct for anti-aliasing artifacts, there is a forced one-pixel overlap for each stripe of the gradient. As a result, this script does not work on semitransparent typesets at all.
 
 Nonetheless, it provides the ability to create a gradient of more or less any arbitrary shape.
+
+=== clip-clip.lua ===
+
+Intersects a lines-only vector clip with a rectangular clip. Less awesome than it sounds, since I found out after writing this script that you can have two \clip tags in the same line, so long as one is vector and one is rectangular. Welp.
 
 === image2ass_auto.lua ===
 
