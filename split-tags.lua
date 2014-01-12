@@ -27,7 +27,7 @@ calculates newline heights, I might write a separate script to split at newlines
 
 script_name="Split at tags"
 script_description="Splits the line into separate lines based on tag boundaries"
-script_version="0.2"
+script_version="0.3"
 
 include("karaskel.lua")
 
@@ -146,7 +146,7 @@ local function get_pos(line)
 				elseif _temp==2 then
 					posx=line.eff_margin_l+(vid_x-line.eff_margin_l-line.eff_margin_r)/2
 				else
-					posx=vid-x-line.eff_margin_r
+					posx=vid_x-line.eff_margin_r
 				end
 			end
 		end
@@ -336,7 +336,11 @@ local function split_tag(sub,sel)
 		--cum_height=cum_height+substr_data[#substr_data].height
 		
 		--Stores current state of the line as a state subtable
-		current_subtable=deep_copy(substr_data[1].subtable)
+		current_subtable={}
+		--[[current_subtable=shallow_copy(substr_data[1].subtable)
+		if current_subtable["t"]~=nil then
+			current_subtable["t"]=shallow_copy(substr_data[1].subtable["t"])
+		end]]
 		
 		--How far to offset the x coordinate
 		xoffset=0
@@ -387,9 +391,12 @@ local function split_tag(sub,sel)
 			for tag,param in pairs(substr_data[i].subtable) do
 				if tag=="t" then
 					if current_subtable["t"]==nil then
-						current_subtable["t"]=deep_copy(param)
+						current_subtable["t"]=shallow_copy(param)
 					else
-						current_subtable["t"]={unpack(current_subtable["t"]),unpack(param)}
+						--current_subtable["t"]={unpack(current_subtable["t"]),unpack(param)}
+						for _,subval in ipairs(param) do
+							table.insert(current_subtable["t"],subval)
+						end
 					end
 				else
 					current_subtable[tag]=param
