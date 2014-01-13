@@ -47,11 +47,14 @@ Relative (start) means both the start and end time are relative to the
 	start of the line that the template is being applied to.
 Relative (end) means... well you get the idea.
 
+TODO: Template sharing? Open dialog to select .tm file, automatically
+add to AppData folder, update index
+
 ]]
 
 script_name="Template Manager"
 script_description="Manage typesetting templates."
-script_version="1.3"
+script_version="1.4"
 
 require 'karaskel'
 require 'utils'
@@ -872,7 +875,7 @@ function main_menu(sub,sel)
 		{x=1,y=0,width=1,height=1,class="dropdown",name="tgroup",items=templates,value=ctg}
 	}
 	
-	local options={"New template group","Quit"}
+	local options={"New template group","Import","Quit"}
 	local option_ids={cancel="Quit"}
 	
 	if #templates>0 then
@@ -914,6 +917,21 @@ function main_menu(sub,sel)
 			templates[didx]=templates[didx].." (DISABLED)"
 		end
 		ctg=templates[1]
+		save_tm()
+		return main_menu()
+	
+	--Import
+	elseif pressed=="Import" then
+		
+		local itemp=aegisub.dialog.open("Select template","","",".tm files|*.tm",false,true)
+		local itempname=itemp:match(psep.."([^"..psep.."]+)%.tm$")
+		
+		--Copy file
+		if psep=="\\" then os.execute("copy \""..itemp.."\" \""..tmpath.."\"")
+		else os.execute("cp \""..itemp.."\" \""..tmpath.."\"") end
+		
+		--Insert name
+		table.insert(templates,itempname)
 		save_tm()
 		return main_menu()
 		
