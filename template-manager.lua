@@ -54,7 +54,7 @@ add to AppData folder, update index
 
 script_name="Template Manager"
 script_description="Manage typesetting templates."
-script_version="1.4"
+script_version="1.5"
 
 require 'karaskel'
 require 'utils'
@@ -399,7 +399,7 @@ function make_template(tname)
 								
 							end)
 						
-						return txt:gsub("\\[^\\}]+%%DELETE%%[^\\}]*([\\}])","%1")
+						return txt:gsub("\\[^\\}]+%%DELETE%%[^\\}]*","")
 					end
 					
 					rbtext=rbtext..replacer(ttag)..replacer(ttext)
