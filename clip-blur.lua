@@ -21,7 +21,7 @@ create a whopping 41 lines. Use with caution.
 
 script_name="Blur clip"
 script_description="Blurs a vector clip."
-script_version="1.0"
+script_version="1.1"
 
 --[[REQUIRE lib-lyger.lua OF VERSION 1.1 OR HIGHER]]--
 if pcall(require,"lib-lyger") and chkver("1.1") then
@@ -217,15 +217,33 @@ function grow(vt,r,sc)
 	return unwrap(wnvt)
 end
 
+function merge_identical(vt)
+	local mvt=shallow_copy(vt)
+	i=2
+	lx=mvt[1].x
+	ly=mvt[1].y
+	while i<#mvt do
+		if mvt[i].x==lx and mvt[i].y==ly then
+			table.remove(mvt,i)
+		else
+			lx=mvt[i].x
+			ly=mvt[i].y
+			i=i+1
+		end
+	end
+	return mvt
+end
+
 --Returns chirality of vector shape. +1 if counterclockwise, -1 if clockwise
 function get_chirality(vt)
 	local wvt=wrap(vt)
+	wvt=merge_identical(wvt)
 	trot=0
 	for i=2,#wvt-1,1 do
 		rot1=math.atan2(wvt[i].y-wvt[i-1].y,wvt[i].x-wvt[i-1].x)
 		rot2=math.atan2(wvt[i+1].y-wvt[i].y,wvt[i+1].x-wvt[i].x)
 		drot=todegree(rot2-rot1)%360
-		if drot>180 then drot=360-drot else drot=-1*drot end
+		if drot>180 then drot=360-drot elseif drot==180 then drot=0 else drot=-1*drot end
 		trot=trot+drot
 	end
 	return sign(trot)
