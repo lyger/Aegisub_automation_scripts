@@ -54,7 +54,7 @@ add to AppData folder, update index
 
 script_name="Template Manager"
 script_description="Manage typesetting templates."
-script_version="1.5"
+script_version="1.6"
 
 require 'karaskel'
 require 'utils'
@@ -367,11 +367,11 @@ function make_template(tname)
 									param=ctag:match("\\move%("..("[%-%d%.]+,"):rep(5).."([%-%d%.]+)")
 								elseif tg=="clipx1" then
 									param=ctag:match("\\clip%(([%-%d%.]+)")
-								elseif tg=="y1" then
+								elseif tg=="clipy1" then
 									param=ctag:match("\\clip%([%-%d%.]+,([%-%d%.]+)")
-								elseif tg=="x2" then
+								elseif tg=="clipx2" then
 									param=ctag:match("\\clip%("..("[%-%d%.]+,"):rep(2).."([%-%d%.]+)")
-								elseif tg=="y2" then
+								elseif tg=="clipy2" then
 									param=ctag:match("\\clip%("..("[%-%d%.]+,"):rep(3).."([%-%d%.]+)")
 								elseif tg=="orgx" then
 									param=ctag:match("\\org%(([%-%d%.]+)")
@@ -927,11 +927,11 @@ function main_menu(sub,sel)
 		local itempname=itemp:match(psep.."([^"..psep.."]+)%.tm$")
 		
 		--Copy file
-		if psep=="\\" then os.execute("copy \""..itemp.."\" \""..tmpath.."\"")
+		if psep=="\\" then os.execute("copy \""..itemp.."\" \""..tmpath.."\" /Y")
 		else os.execute("cp \""..itemp.."\" \""..tmpath.."\"") end
 		
 		--Insert name
-		table.insert(templates,itempname)
+		if not isdupe(templates,itempname) then table.insert(templates,itempname) end
 		save_tm()
 		return main_menu()
 		
