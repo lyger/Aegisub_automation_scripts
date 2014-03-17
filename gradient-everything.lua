@@ -57,13 +57,20 @@ TODO: Debug, debug, and keep debugging
 
 script_name="Gradient everything"
 script_description="Define a bounding box, and this will gradient everything."
-script_version="1.0"
+script_version="1.0.2"
 
 --[[REQUIRE lib-lyger.lua OF VERSION 1.0 OR HIGHER]]--
 if pcall(require,"lib-lyger") and chkver("1.0") then
 
 --Set the location of the config file
-local config_path=aegisub.decode_path("?user").."ge-presets.config"
+local config_pre=aegisub.decode_path("?user")
+local config_name="ge-presets.config"
+local psep=config_pre:match("\\")~=nil and "\\" or "/"
+
+--Old config path, to allow old data to be copied over to the proper location
+local old_config_path=config_pre..config_name
+--Proper config path
+local config_path=config_pre..psep..config_name
 
 function create_config()
 	
@@ -741,12 +748,19 @@ function load_ge_previous(sub,sel)
 		aegisub.log("Could not detect last used settings. Please run the gradient everything automation first.")
 		return
 	end
-	gradient_everything(sub,sel,preset_used)
+	newsel=gradient_everything(sub,sel,preset_used)
 	aegisub.set_undo_point(script_name.." - repeat last")
+	return newsel
 end
 
 function load_ge(sub,sel)
-
+	
+	--Copies old data over in the case of first run after upgrade
+	local oldpresets=open_presets_from_file(old_config_path)
+	if oldpresets~=nil then
+		write_presets_to_file(config_path,oldpresets)
+	end
+	
 	--Create a new config file with the "horizontal all" default, if it doesn't exist
 	local presets=open_presets_from_file(config_path)
 	if presets==nil then

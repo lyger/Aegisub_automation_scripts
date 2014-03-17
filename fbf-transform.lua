@@ -70,19 +70,27 @@ want it.
 
 
 TODO:
-debug presets features
+Check that all lines text match
+iclip support
 
 ]]--
 
 script_name="Frame-by-frame transform"
 script_description="Smoothly transforms between the first and last selected lines."
-script_version="1.0"
+script_version="1.0.2"
 
 --[[REQUIRE lib-lyger.lua OF VERSION 1.0 OR HIGHER]]--
 if pcall(require,"lib-lyger") and chkver("1.0") then
 
 --Set the location of the config file
-local config_path=aegisub.decode_path("?user").."fbf-presets.config"
+local config_pre=aegisub.decode_path("?user")
+local config_name="fbf-presets.config"
+local psep=config_pre:match("\\")~=nil and "\\" or "/"
+
+--Old config path, to allow old data to be copied over to the proper location
+local old_config_path=config_pre..config_name
+--Proper config path
+local config_path=config_pre..psep..config_name
 
 function create_config()
 	
@@ -738,9 +746,16 @@ function load_fbf_previous(sub,sel)
 	end
 	frame_transform(sub,sel,preset_used)
 	aegisub.set_undo_point(script_name.." - repeat last")
+	return sel
 end
 
 function load_fbf(sub,sel)
+
+	--Copies old data over in the case of first run after upgrade
+	local oldpresets=open_presets_from_file(old_config_path)
+	if oldpresets~=nil then
+		write_presets_to_file(config_path,oldpresets)
+	end
 	
 	--Create a new config file with the "all" default, if it doesn't exist
 	local presets=open_presets_from_file(config_path)
@@ -754,7 +769,7 @@ function load_fbf(sub,sel)
 				results_all[conval.name]=1
 			end
 		end
-		write_presets_to_file(config_path,{{name="Horizontal all",value=results_all}})
+		write_presets_to_file(config_path,{{name="All",value=results_all}})
 		
 		presets=open_presets_from_file(config_path)
 	end
@@ -916,7 +931,7 @@ function load_fbf(sub,sel)
 		write_presets_to_file(config_path,presets)
 		
 		--Set undo point
-		aegisub.set_undo_point(script_name);
+		aegisub.set_undo_point(script_name)
 		return sel
 	end
 end

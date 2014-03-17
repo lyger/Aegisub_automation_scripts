@@ -178,14 +178,21 @@ flags
 
 script_name="Lua Interpreter"
 script_description="Run Lua code on the fly"
-script_version="beta 1.1"
+script_version="beta 1.2"
 
 --[[REQUIRE lib-lyger.lua OF VERSION 1.0 OR HIGHER]]--
 if pcall(require,"lib-lyger") and chkver("1.0") then
 
 
 --Set the location of the config file
-local config_path=aegisub.decode_path("?user").."luaint-presets.config"
+local config_pre=aegisub.decode_path("?user")
+local config_name="luaint-presets.config"
+local psep=config_pre:match("\\")~=nil and "\\" or "/"
+
+--Old config path, to allow old data to be copied over to the proper location
+local old_config_path=config_pre..config_name
+--Proper config path
+local config_path=config_pre..psep..config_name
 
 
 textbox={}
@@ -280,6 +287,12 @@ function lua_interpret(sub,sel)
 	
 	meta,styles=karaskel.collect_head(sub,false)
 	
+	--Copies old data over in the case of first run after upgrade
+	local oldpresets=table_from_file(old_config_path)
+	if oldpresets~=nil then
+		table_to_file(config_path,oldpresets)
+	end
+	
 	--Load presets or create if none
 	presets=table_from_file(config_path)
 	if presets==nil then
@@ -363,10 +376,10 @@ function lua_interpret(sub,sel)
 	
 	new_sel={}
 	
-	--Run for all lines in selection. Hard limit of 5000 just in case
+	--Run for all lines in selection. Hard limit of 9001 just in case
 	i=1
 	flags={}
-	while i<=#sel and #sel<=5000 do
+	while i<=#sel and #sel<=9001 do
 		local li=sel[i]
 		local line=sub[li]
 		
@@ -462,6 +475,8 @@ function lua_interpret(sub,sel)
 			fenv=getfenv(1)
 			fenv.j=j
 			fenv.line=line
+			fenv.flags=flags
+			fenv.maxj=#line_table
 			
 			--Wrappers for the once-per-line functions
 			fenv.duplicate = function() if j==1 then _duplicate() end end
@@ -553,13 +568,15 @@ function lua_interpret(sub,sel)
 			fenv.rep=replace
 			fenv.app=append
 			fenv.modln=modify_line
+			fenv.rem=fenv.remove
 			
 			--Run the user's code
 			_com,err=loadstring(command)
 			
+			if err then aegisub.log(err) aegisub.cancel() end
+			
 			_com=setfenv(_com,fenv)
 			
-			if err then aegisub.log(err) aegisub.cancel() end
 			_com()
 			
 			a.text=text
