@@ -185,10 +185,6 @@ function run_i2a(subs,sel)
 	--Prompt for bitmap image
 	fname=aegisub.dialog.open("Select image","","",ffilter,false,true)
 	if not fname then aegisub.cancel() end
-		
-	testfile=io.open("test.txt","wb")
-	testfile:write("Hi")
-	testfile:close()
 	
 	cleanfiles={}
 	--Convert to .bmp if not .bmp already
