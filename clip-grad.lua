@@ -23,7 +23,7 @@ interfere with the gradient. The same goes for shadow.
 
 script_name="Gradient along clip edge"
 script_description="Color gradient along clip edge. Solid alpha only."
-script_version="0.1.3"
+script_version="0.1.4"
 
 include("karaskel.lua")
 include("utils.lua")
@@ -228,15 +228,33 @@ function grow(vt,r,sc)
 	return unwrap(wnvt)
 end
 
+function merge_identical(vt)
+	local mvt=shallow_copy(vt)
+	i=2
+	lx=mvt[1].x
+	ly=mvt[1].y
+	while i<#mvt do
+		if mvt[i].x==lx and mvt[i].y==ly then
+			table.remove(mvt,i)
+		else
+			lx=mvt[i].x
+			ly=mvt[i].y
+			i=i+1
+		end
+	end
+	return mvt
+end
+
 --Returns chirality of vector shape. +1 if counterclockwise, -1 if clockwise
 function get_chirality(vt)
 	local wvt=wrap(vt)
+	wvt=merge_identical(wvt)
 	trot=0
 	for i=2,#wvt-1,1 do
 		rot1=math.atan2(wvt[i].y-wvt[i-1].y,wvt[i].x-wvt[i-1].x)
 		rot2=math.atan2(wvt[i+1].y-wvt[i].y,wvt[i+1].x-wvt[i].x)
 		drot=todegree(rot2-rot1)%360
-		if drot>180 then drot=360-drot else drot=-1*drot end
+		if drot>180 then drot=360-drot elseif drot==180 then drot=0 else drot=-1*drot end
 		trot=trot+drot
 	end
 	return sign(trot)
@@ -358,6 +376,7 @@ function grad_clip(sub,sel)
 				label="Gradient size:",
 				x=0,y=0,width=2,height=1
 			},
+			gsize=
 			{
 				class="floatedit",
 				name="gsize",
@@ -369,6 +388,7 @@ function grad_clip(sub,sel)
 				label="Gradient position:",
 				x=0,y=1,width=2,height=1
 			},
+			gpos=
 			{
 				class="dropdown",
 				name="gpos",
@@ -381,10 +401,11 @@ function grad_clip(sub,sel)
 				label="Step size:",
 				x=0,y=2,width=2,height=1
 			},
+			gstep=
 			{
 				class="intedit",
 				name="gstep",
-				min=1,max=4,value=1,
+				min=1,max=20,value=1,
 				x=2,y=2,width=2,height=1
 			},
 			{
@@ -407,48 +428,56 @@ function grad_clip(sub,sel)
 				label="Color4",
 				x=3,y=3,width=1,height=1
 			},
+			c1_1=
 			{
 				class="color",
 				name="c1_1",
 				x=0,y=4,width=1,height=1,
 				value=refc1
 			},
+			c2_1=
 			{
 				class="color",
 				name="c2_1",
 				x=1,y=4,width=1,height=1,
 				value=refc2
 			},
+			c3_1=
 			{
 				class="color",
 				name="c3_1",
 				x=2,y=4,width=1,height=1,
 				value=refc3
 			},
+			c4_1=
 			{
 				class="color",
 				name="c4_1",
 				x=3,y=4,width=1,height=1,
 				value=refc4
 			},
+			c1_2=
 			{
 				class="color",
 				name="c1_2",
 				x=0,y=5,width=1,height=1,
 				value=refc1
 			},
+			c2_2=
 			{
 				class="color",
 				name="c2_2",
 				x=1,y=5,width=1,height=1,
 				value=refc2
 			},
+			c3_2=
 			{
 				class="color",
 				name="c3_2",
 				x=2,y=5,width=1,height=1,
 				value=refc3
 			},
+			c4_2=
 			{
 				class="color",
 				name="c4_2",
@@ -513,6 +542,11 @@ function grad_clip(sub,sel)
 	--How far to offset the next line read
 	lines_added=0
 	
+	--Update config
+	for gk,gv in pairs(results) do
+		gconfig[gk].value=gv
+	end
+	
 	for si,li in ipairs(sel) do
 		
 		--Progress report
@@ -540,8 +574,8 @@ function grad_clip(sub,sel)
 		end
 		
 		--If it's a rectangular clip, convert to vector clip
-		if tvector:match("([%d%-]+),([%d%-]+),([%d%-]+),([%d%-]+)")~=nil then
-			_x1,_y1,_x2,_y2=tvector:match("([%d%-]+),([%d%-]+),([%d%-]+),([%d%-]+)")
+		if tvector:match("([%d%-%.]+),([%d%-%.]+),([%d%-%.]+),([%d%-%.]+)")~=nil then
+			_x1,_y1,_x2,_y2=tvector:match("([%d%-%.]+),([%d%-%.]+),([%d%-%.]+),([%d%-%.]+)")
 			tvector=string.format("m %d %d l %d %d %d %d %d %d",
 				_x1,_y1,_x2,_y1,_x2,_y2,_x1,_y2)
 		end
