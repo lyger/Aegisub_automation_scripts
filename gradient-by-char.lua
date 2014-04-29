@@ -18,7 +18,7 @@ convenience above all, so it runs with a single button press and no time-consumi
 
 script_name="Gradient by character"
 script_description="Smoothly transforms tags across your line, by character."
-script_version="1.2"
+script_version="1.2.1"
 
 re = require 'aegisub.re'
 
@@ -236,7 +236,7 @@ function grad_char(sub,sel)
 								rtext=rtext..ch
 							else
 								--The final tag, with a star to indicate it was added through interpolation
-								rtext=rtext.."{\*"..non_time_tags.."}"..ch
+								rtext=rtext.."{*"..non_time_tags.."}"..ch
 							end
 							
 						end
