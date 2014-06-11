@@ -178,10 +178,10 @@ flags
 
 script_name="Lua Interpreter"
 script_description="Run Lua code on the fly"
-script_version="beta 1.2"
+script_version="beta 1.2.1"
 
 --[[REQUIRE lib-lyger.lua OF VERSION 1.0 OR HIGHER]]--
-if pcall(require,"lib-lyger") and chkver("1.0") then
+if pcall(require,"lib-lyger") and chkver("1.1") then
 
 
 --Set the location of the config file
@@ -223,9 +223,9 @@ end
 
 --Returns a function that adds by each number
 function add(...)
-	x=arg
+	x=table.pack(...)
 	return function(...)
-			y=arg
+			y=table.pack(...)
 			z={}
 			for i,_ in ipairs(y) do
 				y[i]=tonumber(y[i]) or 0
@@ -238,9 +238,9 @@ end
 
 --Returns a function that multiplies by each number
 function multiply(...)
-	x=arg
+	x=table.pack(...)
 	return function(...)
-			y=arg
+			y=table.pack(...)
 			z={}
 			for i,_ in ipairs(y) do
 				y[i]=tonumber(y[i]) or 0
@@ -253,7 +253,7 @@ end
 
 --Returns a function that replaces with x
 function replace(...)
-	b=arg
+	b=table.pack(...)
 	return function() return unpack(b) end
 end
 
@@ -548,7 +548,7 @@ function lua_interpret(sub,sel)
 			
 			--Remove the given tags
 			fenv.remove = function(...)
-				b=arg
+				b=table.pack(...)
 				tag=line_exclude(tag,b)
 			end
 			
