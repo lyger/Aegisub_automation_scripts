@@ -178,7 +178,7 @@ flags
 
 script_name="Lua Interpreter"
 script_description="Run Lua code on the fly"
-script_version="beta 1.2.1"
+script_version="beta 1.2.2"
 
 --[[REQUIRE lib-lyger.lua OF VERSION 1.0 OR HIGHER]]--
 if pcall(require,"lib-lyger") and chkver("1.1") then
@@ -209,6 +209,11 @@ opl={
 	["fad"]=true,
 	["clip"]=true
 }
+
+--Backwards compatibility with old versions of lua
+if not table.pack then
+	table.pack=function(...) return {...} end
+end
 
 --Remake the configuration defaults
 function make_conf()
