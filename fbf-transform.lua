@@ -63,6 +63,8 @@ circle until it gets to 350. You probably wanted it to rotate only 20 degrees, p
 solution is to check the "Rotate in shortest direction" checkbox from the popup window. This will cause
 the line to always pick the rotation direction that has a total rotation of less than 180 degrees.
 
+New feature: ignore text. Requires you to only have one tag block in each line, at the beginning.
+
 
 Comes with an extra automation "Remove tags" that utilizes functions that were written for the main
 automation. You can comment out (two dashes) the line at the bottom that adds this automation if you don't
@@ -77,7 +79,7 @@ iclip support
 
 script_name="Frame-by-frame transform"
 script_description="Smoothly transforms between the first and last selected lines."
-script_version="1.0.2"
+script_version="1.1"
 
 --[[REQUIRE lib-lyger.lua OF VERSION 1.0 OR HIGHER]]--
 if pcall(require,"lib-lyger") and chkver("1.0") then
@@ -263,26 +265,32 @@ function create_config()
 		{
 			class="checkbox",
 			name="do_pos",label="pos",
-			x=0,y=7,wdith=1,height=1,
+			x=0,y=7,width=1,height=1,
 			value=false
 		},
 		{
 			class="checkbox",
 			name="do_org",label="org",
-			x=1,y=7,wdith=1,height=1,
+			x=1,y=7,width=1,height=1,
 			value=false
 		},
 		{
 			class="checkbox",
 			name="do_clip",label="clip",
-			x=2,y=7,wdith=1,height=1,
+			x=2,y=7,width=1,height=1,
 			value=false
 		},
 		--Flip rotation
 		{
 			class="checkbox",
 			name="flip_rot",label="Rotate in shortest direction",
-			x=0,y=8,width=4,height=1,
+			x=0,y=8,width=3,height=1,
+			value=false
+		},
+		{
+			class="checkbox",
+			name="skiptext",label="Ignore text",
+			x=3,y=8,width=2,height=1,
 			value=false
 		},
 		--Acceleration
@@ -437,6 +445,9 @@ function frame_transform(sub,sel,config)
 	--Controls whether rotations always go in direction of least rotation
 	do_flip_rotation=config["flip_rot"]
 	
+	--Controls wether the text is ignored
+	ignore_text=config["skiptext"]
+	
 	--Set the acceleration (default 1)
 	local accel=config["accel"]
 	
@@ -477,24 +488,39 @@ function frame_transform(sub,sel,config)
 	local end_table={}
 	
 	--Separate each line into a table of tags and text
-	first_line.text=first_line.text:gsub("}","}\t")
-	x=1
-	for thistag,thistext in first_line.text:gmatch("({[^{}]*})([^{}]*)") do
-		start_table[x]={tag=thistag,text=thistext:gsub("^\t","")}
-		x=x+1
-	end
-	first_line.text=first_line.text:gsub("}\t","}")
+	if ignore_text then
+		local tfline=first_line.text
+		local tlline=last_line.text
+		while not tfline:match("^{[^}]+}[^{]") do
+			tfline=tfline:gsub("}{","",1)
+		end
+		while not tlline:match("^{[^}]+}[^{]") do
+			tlline=tfline:gsub("}{","",1)
+		end
+		local stag,stext=tfline:match("^({[^}]+})(.+)$")
+		local etag,etext=tlline:match("^({[^}]+})(.+)$")
+		start_table[1]={tag=stag,text=stext}
+		end_table[1]={tag=etag,text=etext}
+	else
+		first_line.text=first_line.text:gsub("}","}\t")
+		x=1
+		for thistag,thistext in first_line.text:gmatch("({[^{}]*})([^{}]*)") do
+			start_table[x]={tag=thistag,text=thistext:gsub("^\t","")}
+			x=x+1
+		end
+		first_line.text=first_line.text:gsub("}\t","}")
+		
+		last_line.text=last_line.text:gsub("}","}\t")
+		x=1
+		for thistag,thistext in last_line.text:gmatch("({[^{}]*})([^{}]*)") do
+			end_table[x]={tag=thistag,text=thistext:gsub("^\t","")}
+			x=x+1
+		end
+		last_line.text=last_line.text:gsub("}\t","}")
 	
-	last_line.text=last_line.text:gsub("}","}\t")
-	x=1
-	for thistag,thistext in last_line.text:gmatch("({[^{}]*})([^{}]*)") do
-		end_table[x]={tag=thistag,text=thistext:gsub("^\t","")}
-		x=x+1
+		--Make sure both lines have the same splits
+		start_table,end_table=match_splits(start_table,end_table)
 	end
-	last_line.text=last_line.text:gsub("}\t","}")
-	
-	--Make sure both lines have the same splits
-	start_table,end_table=match_splits(start_table,end_table)
 	
 	--Tables that store tables for each tag block, consisting of the state of all relevant tags
 	--that are in the transform_tags table
@@ -594,52 +620,62 @@ function frame_transform(sub,sel,config)
 		
 		--Break the line into a table
 		local this_table={}
-		this_line.text=this_line.text:gsub("}","}\t")
-		x=1
-		for thistag,thistext in this_line.text:gmatch("({[^{}]*})([^{}]*)") do
-			this_table[x]={tag=thistag,text=thistext:gsub("^\t","")}
-			x=x+1
-		end
-		this_line.text=this_line.text:gsub("}\t","}")
-		
-		--Make sure it has the same splits
-		local j=1
-		while (j<=#start_table) do
-			stext=start_table[j].text
-			stag=start_table[j].tag
-			ttext=this_table[j].text
-			ttag=this_table[j].tag
-			
-			--ttext might contain miscellaneous tags that are not being checked for, so remove them temporarily
-			ttext_temp=ttext:gsub("{[^{}]*}","")
-			--If this table item has longer text, break it in two based on the text of the start table
-			if ttext_temp:len() > stext:len() then
-				newtext=ttext_temp:match(esc(stext).."(.*)")
-				for j=#this_table,j+1,-1 do
-					this_table[j+1]=this_table[j]
-				end
-				this_table[j]={tag=ttag,text=ttext:gsub(esc(newtext).."$","")}
-				this_table[j+1]={tag="{}",text=newtext}
+		if ignore_text then
+			local tcline=this_line.text
+			while not tcline:match("^{[^}]+}[^{]") do
+				tcline=tcline:gsub("}{","",1)
 			end
-			--If the start table has longer text, then perhaps ttext was split at a tag that's not being transformed
-			if ttext:len() < stext:len() then
-				--It should be impossible for this to happen at the end, but check anyway
-				if this_table[j+1]~=nil then
-					this_table[j].text=ttext..this_table[j+1].tag..this_table[j+1].text
-					if this_table[j+2]~=nil then
-						for j=j+1,#this_table-1,1 do
-							this_table[j]=this_table[j+1]
-						end
+			local ctag,ctext=tcline:match("^({[^}]+})(.+)$")
+			this_table[1]={tag=ctag,text=ctext}
+		else
+			this_line.text=this_line.text:gsub("}","}\t")
+			x=1
+			for thistag,thistext in this_line.text:gmatch("({[^{}]*})([^{}]*)") do
+				this_table[x]={tag=thistag,text=thistext:gsub("^\t","")}
+				x=x+1
+			end
+			this_line.text=this_line.text:gsub("}\t","}")
+			--Make sure it has the same splits
+			local j=1
+			while (j<=#start_table) do
+				stext=start_table[j].text
+				stag=start_table[j].tag
+				ttext=this_table[j].text
+				ttag=this_table[j].tag
+				
+				--ttext might contain miscellaneous tags that are not being checked for, so remove them temporarily
+				ttext_temp=ttext:gsub("{[^{}]*}","")
+				--If this table item has longer text, break it in two based on the text of the start table
+				if ttext_temp:len() > stext:len() then
+					newtext=ttext_temp:match(esc(stext).."(.*)")
+					for j=#this_table,j+1,-1 do
+						this_table[j+1]=this_table[j]
 					end
-					this_table[#this_table]=nil
-					j=j-1
-				else
-					aegisub.log("You fucked up big time somewhere. Sorry.")
-					return
+					this_table[j]={tag=ttag,text=ttext:gsub(esc(newtext).."$","")}
+					this_table[j+1]={tag="{}",text=newtext}
 				end
+				--If the start table has longer text, then perhaps ttext was split at a tag that's not being transformed
+				if ttext:len() < stext:len() then
+					--It should be impossible for this to happen at the end, but check anyway
+					if this_table[j+1]~=nil then
+						this_table[j].text=ttext..this_table[j+1].tag..this_table[j+1].text
+						if this_table[j+2]~=nil then
+							for j=j+1,#this_table-1,1 do
+								this_table[j]=this_table[j+1]
+							end
+						end
+						this_table[#this_table]=nil
+						j=j-1
+					else
+						aegisub.log("You fucked up big time somewhere. Sorry.")
+						return
+					end
+				end
+				j=j+1
 			end
-			j=j+1
 		end
+		
+
 				
 		--Interpolate all the relevant parameters and insert		
 		rebuilt_text=""
