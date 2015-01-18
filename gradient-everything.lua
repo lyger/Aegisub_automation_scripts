@@ -73,7 +73,7 @@ local old_config_path=config_pre..config_name
 local config_path=config_pre..psep..config_name
 
 function create_config()
-	
+
 	local config={
 		--define pixels per strip
 		{
@@ -195,7 +195,7 @@ function create_config()
 			x=2, y=4, width=1, height=1,
 			value=false
 		},
-		--border, shadow, font size, font spacing 
+		--border, shadow, font size, font spacing
 		{
 			class="checkbox",
 			name="bord",label="bord",
@@ -286,7 +286,7 @@ function create_config()
 			hint="1 means no acceleration, >1 starts slow and ends fast, <1 starts fast and ends slow"
 		}
 	}
-	
+
 	return config
 end
 
@@ -368,19 +368,19 @@ local function match_splits(line_table1,line_table2)
 		end
 		i=i+1
 	end
-	
+
 	return line_table1,line_table2
 end
 
 --The main body of code that runs the frame transform
 function gradient_everything(sub,sel,config)
-	
+
 	--Get meta and style info
 	local meta,styles = karaskel.collect_head(sub, false)
-	
+
 	--These are the tags to transform
 	transform_tags={}
-	
+
 	--Add based on config
 	--(This could probably be done with a for statement, but it's not like that'll have better runtime)
 	if config["c"] then table.insert(transform_tags,"c") end
@@ -409,26 +409,26 @@ function gradient_everything(sub,sel,config)
 	if config["ybord"] then table.insert(transform_tags,"ybord") end
 	if config["xshad"] then table.insert(transform_tags,"xshad") end
 	if config["yshad"] then table.insert(transform_tags,"yshad") end
-	
+
 	--Number of pixels per strip
-	strip=config["strip_pix"]	
-	
+	strip=config["strip_pix"]
+
 	--Controls whether rotations always go in direction of least rotation
 	do_flip_rotation=config["flip_rot"]
-	
+
 	--Set the acceleration (default 1)
 	local accel=config["accel"]
-	
+
 	--Controls whether to apply transform to or origin
 	do_org=config["do_org"]
-	
+
 	--Controls vertical or horizontal
 	do_vertical=true
 	if config["hv_select"]=="horizontal" then do_vertical=false end
-	
+
 	--left, top, right, bottom
 	clip1,clip2,clip3,clip4=nil,nil,nil,nil
-	
+
 	--Look for a clip statement in one of the lines
 	for si,li in ipairs(sel) do
 		this_line=sub[li]
@@ -436,37 +436,37 @@ function gradient_everything(sub,sel,config)
 			this_line.text:find("\\clip%(([%d%.%-]*),([%d%.%-]*),([%d%.%-]*),([%d%.%-]*)%)")
 		if found then break end
 	end
-	
+
 	--Exit if none of the lines contain a rectangular clip
 	if clip1==nil then
 		aegisub.log("Please put a rectangular clip in one of the selected lines.")
 		return
 	end
-	
+
 	clip1=tonumber(clip1)
 	clip2=tonumber(clip2)
 	clip3=tonumber(clip3)
 	clip4=tonumber(clip4)
-	
+
 	--Make sure clip1 is the left and clip3 is the right
 	if clip1>clip3 then
 		_temp=clip3
 		clip3=clip1
 		clip1=_temp
 	end
-	
+
 	--Make sure clip2 is the top and clip4 is the bottom
 	if clip2>clip4 then
 		_temp=clip4
 		clip4=clip2
 		clip2=_temp
 	end
-	
+
 	--The pixel dimension of the relevant direction of gradient
 	span=0
 	if do_vertical then span=clip4-clip2
 	else span=clip3-clip1 end
-	
+
 	--Stores how many frames between each key line
 	--Index 1 is how many frames between keys 1 and 2, and so on
 	frames_per={}
@@ -476,83 +476,83 @@ function gradient_everything(sub,sel,config)
 		frames_per[i-1]=_temp-_temp_total
 		_temp_total=_temp
 	end
-	
+
 	--IMPORTANT CONTROL VARIABLES
 	--Must be initialized here
 	--The cumulative pixel offset that indicates the start of the line
 	cum_off=0
 	--And the index of insertion
 	ins_index=1
-	
+
 	--Store the new selection
 	local new_sel={}
-	
+
 	--Master control loop
 	--First cycle through all the selected "intervals" (pairs of two consecutive selected lines)
 	for i=2,#sel,1 do
 		--Read the first and last lines
 		first_line=sub[sel[i]-1]
 		last_line=sub[sel[i]]
-		
+
 		--And comment them out
 		first_line.comment=true
 		last_line.comment=true
 		sub[sel[i]-1]=first_line
 		sub[sel[i]]=last_line
-		
+
 		--Preprocess
 		karaskel.preproc_line(sub,meta,styles,first_line)
 		karaskel.preproc_line(sub,meta,styles,last_line)
-		
+
 		--Figure out the correct position values
 		local sposx,sposy=get_pos(first_line)
 		local eposx,eposy=get_pos(last_line)
-		
+
 		--Look for origin
 		local sorgx,sorgy=get_org(first_line)
 		local eorgx,eorgy=get_org(last_line)
-		
+
 		--Make sure each line starts with tags
 		if first_line.text:find("^{")==nil then first_line.text="{}"..first_line.text end
 		if last_line.text:find("^{")==nil then last_line.text="{}"..last_line.text end
-		
+
 		--Turn all \1c tags into \c tags, just for convenience
 		first_line.text=first_line.text:gsub("\\1c","\\c")
 		last_line.text=last_line.text:gsub("\\1c","\\c")
-		
+
 		--The tables that store the line as objects consisting of a tag and the text that follows it
 		local start_table={}
 		local end_table={}
-		
+
 		--Separate each line into a table of tags and text
 		x=1
 		for thistag,thistext in first_line.text:gmatch("({[^{}]*})([^{}]*)") do
 			start_table[x]={tag=thistag,text=thistext}
 			x=x+1
 		end
-		
+
 		x=1
 		for thistag,thistext in last_line.text:gmatch("({[^{}]*})([^{}]*)") do
 			end_table[x]={tag=thistag,text=thistext}
 			x=x+1
 		end
-		
+
 		--Make sure both lines have the same splits
 		start_table,end_table=match_splits(start_table,end_table)
-		
+
 		--Tables that store tables for each tag block, consisting of the state of all relevant tags
 		--that are in the transform_tags table
 		local start_state_table=make_state_table(start_table,transform_tags)
 		local end_state_table=make_state_table(end_table,transform_tags)
-		
+
 		--Insert default values when not included for the state of each tag block,
 		--or inherit values from previous tag block
 		start_style=style_lookup(first_line)
 		end_style=style_lookup(last_line)
-		
+
 		current_end_state={}
 		current_start_state={}
-		
+
 		for k,sval in ipairs(start_state_table) do
 			--build current state tables
 			for skey,sparam in pairs(sval) do
@@ -561,7 +561,7 @@ function gradient_everything(sub,sel,config)
 			for ekey,eparam in pairs(end_state_table[k]) do
 				current_end_state[ekey]=eparam
 			end
-			
+
 			--check if end is missing any tags that start has
 			for skey,sparam in pairs(sval) do
 				if end_state_table[k][skey]==nil then
@@ -583,7 +583,7 @@ function gradient_everything(sub,sel,config)
 				end
 			end
 		end
-		
+
 		--Create a line table based on first_line, but without relevant tags
 		local _temp_text=line_exclude(first_line.text,transform_tags)
 		_temp_text=line_exclude(_temp_text,{"clip"})
@@ -593,7 +593,7 @@ function gradient_everything(sub,sel,config)
 			this_table[x]={tag=thistag,text=thistext}
 			x=x+1
 		end
-		
+
 		--Inner control loop
 		--For the number of lines indicated by the frames_per table, create a gradient
 		for j=1,frames_per[i-1],1 do
@@ -602,21 +602,21 @@ function gradient_everything(sub,sel,config)
 			--Failsafe because dividing by 0 is bad
 			if frames_per[i-1]<2 then factor=1
 			else factor=((j-1)^accel)/((frames_per[i-1]-1)^accel) end
-			
+
 			--Create this line
 			this_line={}
 			this_line=deep_copy(first_line)
-			
+
 			--Create the relevant clip tag
 			--(as of this version, the 1 pixel overlap has been removed. Hopefully colors still look fine)
 			local clip_tag="\\clip(%d,%d,%d,%d)"
 			if do_vertical then clip_tag=clip_tag:format(clip1,clip2+cum_off+(j-1)*strip,clip3,clip2+cum_off+j*strip)
 			else clip_tag=clip_tag:format(clip1+cum_off+(j-1)*strip,clip2,clip1+cum_off+j*strip,clip4) end
-						
-			--Interpolate all the relevant parameters and insert		
+
+			--Interpolate all the relevant parameters and insert
 			rebuilt_text=""
 			this_current_state={}
-			
+
 			for k,val in ipairs(this_table) do
 				temp_tag=val.tag
 				--Cycle through all the tag blocks and interpolate
@@ -626,11 +626,11 @@ function gradient_everything(sub,sel,config)
 						if param_type[ctag]=="alpha" then
 							--aegisub.debug.out(2," interpolating "..ctag.."\n")
 							ivalue=interpolate_alpha(factor,start_state_table[k][ctag],end_state_table[k][ctag])
-							
+
 						elseif param_type[ctag]=="color" then
 							--aegisub.debug.out(2," interpolating "..ctag.."\n")
 							ivalue=interpolate_color(factor,start_state_table[k][ctag],end_state_table[k][ctag])
-							
+
 						elseif param_type[ctag]=="number" or param_type[ctag]=="angle" then
 							--aegisub.debug.out(2," interpolating "..ctag.."\n")
 							nstart=tonumber(start_state_table[k][ctag])
@@ -642,38 +642,38 @@ function gradient_everything(sub,sel,config)
 								if math.abs(ndelta)>180 then nstart=nstart+(ndelta*360)/math.abs(ndelta) end
 							end
 							nvalue=interpolate(factor,nstart,nend)
-							
+
 							if param_type[ctag]=="angle" and nvalue<0 then
 								nvalue=nvalue+360
 							end
-							
+
 							ivalue=float2str(nvalue)
 						end
-						
+
 						--check for redundancy
 						if this_current_state[ctag]~=nil and this_current_state[ctag]==ivalue then
 							return "}"
 						end
 						this_current_state[ctag]=ivalue
-						
+
 						return "\\"..ctag..ivalue.."}"
 					end)
 				end
 				rebuilt_text=rebuilt_text..temp_tag..val.text
 			end
-			
+
 			--Set the text and uncomment
 			this_line.text=rebuilt_text:gsub("{}","")
 			this_line.comment=false
-			
+
 			--Forcibly add \pos
 			this_line.text=line_exclude(this_line.text,{"pos"})
 			this_line.text=this_line.text:gsub("^{",
 					"{\\pos("..
 					float2str(interpolate(factor,sposx,eposx))..","..
-					float2str(interpolate(factor,sposy,eposy))..")"	
+					float2str(interpolate(factor,sposy,eposy))..")"
 				)
-			
+
 			--Handle org transform
 			if do_org then
 				this_line.text=line_exclude(this_line.text,{"org"})
@@ -683,17 +683,17 @@ function gradient_everything(sub,sel,config)
 						float2str(interpolate(factor,sorgy,eorgy))..")"
 					)
 			end
-			
+
 			--Oh yeah, and add the clip tag
 			this_line.text=this_line.text:gsub("^{","{"..clip_tag)
-			
-			--Reinsert the line			
+
+			--Reinsert the line
 			sub.insert(sel[#sel]+ins_index,this_line)
 			table.insert(new_sel,sel[#sel]+ins_index)
 			ins_index=ins_index+1
-			
+
 		end
-		
+
 		--Increase the cumulative offset
 		cum_off=cum_off+frames_per[i-1]*strip
 	end
@@ -754,13 +754,13 @@ function load_ge_previous(sub,sel)
 end
 
 function load_ge(sub,sel)
-	
+
 	--Copies old data over in the case of first run after upgrade
 	local oldpresets=open_presets_from_file(old_config_path)
 	if oldpresets~=nil then
 		write_presets_to_file(config_path,oldpresets)
 	end
-	
+
 	--Create a new config file with the "horizontal all" default, if it doesn't exist
 	local presets=open_presets_from_file(config_path)
 	if presets==nil then
@@ -778,25 +778,25 @@ function load_ge(sub,sel)
 			end
 		end
 		write_presets_to_file(config_path,{{name="Horizontal all",value=results_all}})
-		
+
 		presets=open_presets_from_file(config_path)
 	end
-	
+
 	--The preset that is selected on script load
 	default_preset_name="No preset"
-	
+
 	--Store dropdown options
 	local preset_names={"No preset"}
 	for i,val in ipairs(presets) do
 		if val.name~="?last" then table.insert(preset_names,val.name) end
 		if val.name=="Default" then default_preset_name="Default" end
 	end
-	
+
 	local buttons={"Gradient","Load preset","Preset manager","Cancel"}
 	local pressed,results
-	
+
 	local config=create_config()
-	
+
 	--Add preset options to the default config
 	local preset_label=
 		{
@@ -814,7 +814,7 @@ function load_ge(sub,sel)
 		}
 	table.insert(config,preset_label)
 	table.insert(config,preset_dropdown)
-	
+
 	repeat
 		--Load selected preset
 		if pressed=="Load preset" then
@@ -844,7 +844,7 @@ function load_ge(sub,sel)
 					preset_dropdown.value="No preset"
 				--Handle saving new preset
 				else
-					
+
 					local is_duplicate, is_blank
 					repeat
 						is_duplicate, is_blank=false, false
@@ -856,7 +856,7 @@ function load_ge(sub,sel)
 								},
 								{"Save"}
 							)
-						
+
 						--Check if it's a duplicate name
 						if temp_preset_name["new_name"]=="" then is_blank=true end
 						for i,val in ipairs(preset_names) do
@@ -885,20 +885,20 @@ function load_ge(sub,sel)
 							is_duplicate=true
 						end
 					until not is_duplicate and not is_blank
-					
+
 					results["preset_select"]=nil
-					
+
 					--Add the new preset
 					table.insert(presets,{name=temp_preset_name["new_name"],value=results})
 					preset_dropdown.value=temp_preset_name["new_name"]
 				end
-				
+
 				--Rewrite the config file to reflect changes in presets
 				write_presets_to_file(config_path,presets)
-				
+
 				--Recreate list of preset names
 				preset_names={"No preset"}
-				
+
 				--Booleans to track what preset it should default to
 				local has_default=false
 				local has_current=false
@@ -931,13 +931,13 @@ function load_ge(sub,sel)
 			end
 		end
 		new_sel=gradient_everything(sub,sel,preset_used)
-		
+
 		--Get rid of the previous "last used"
 		delete_preset(presets,"?last")
 		--Add a new one
 		table.insert(presets,{name="?last",value=preset_used})
 		write_presets_to_file(config_path,presets)
-		
+
 		--Set undo point
 		aegisub.set_undo_point(script_name)
 		return new_sel
