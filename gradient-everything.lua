@@ -426,46 +426,44 @@ function gradient_everything(sub,sel,config)
 	do_vertical=true
 	if config["hv_select"]=="horizontal" then do_vertical=false end
 
-	--left, top, right, bottom
-	clip1,clip2,clip3,clip4=nil,nil,nil,nil
+	local lines, left, top, right, bottom = {}
 
 	--Look for a clip statement in one of the lines
 	for si,li in ipairs(sel) do
 		this_line=sub[li]
-		found,_,clip1,clip2,clip3,clip4=
-			this_line.text:find("\\clip%(([%d%.%-]*),([%d%.%-]*),([%d%.%-]*),([%d%.%-]*)%)")
-		if found then break end
+		left, top, right, bottom = lines[i].text:match("\\clip%(([%d%.%-]*),([%d%.%-]*),([%d%.%-]*),([%d%.%-]*)%)")
+		if left then break end
 	end
 
 	--Exit if none of the lines contain a rectangular clip
-	if clip1==nil then
+	if left==nil then
 		aegisub.log("Please put a rectangular clip in one of the selected lines.")
 		return
 	end
 
-	clip1=tonumber(clip1)
-	clip2=tonumber(clip2)
-	clip3=tonumber(clip3)
-	clip4=tonumber(clip4)
+	left=tonumber(left)
+	top=tonumber(top)
+	right=tonumber(right)
+	bottom=tonumber(bottom)
 
-	--Make sure clip1 is the left and clip3 is the right
-	if clip1>clip3 then
-		_temp=clip3
-		clip3=clip1
-		clip1=_temp
+	--Make sure left is the left and right is the right
+	if left>right then
+		_temp=right
+		right=left
+		left=_temp
 	end
 
-	--Make sure clip2 is the top and clip4 is the bottom
-	if clip2>clip4 then
-		_temp=clip4
-		clip4=clip2
-		clip2=_temp
+	--Make sure top is the top and bottom is the bottom
+	if top>bottom then
+		_temp=bottom
+		bottom=top
+		top=_temp
 	end
 
 	--The pixel dimension of the relevant direction of gradient
 	span=0
-	if do_vertical then span=clip4-clip2
-	else span=clip3-clip1 end
+	if do_vertical then span=bottom-top
+	else span=right-left end
 
 	--Stores how many frames between each key line
 	--Index 1 is how many frames between keys 1 and 2, and so on
@@ -610,8 +608,8 @@ function gradient_everything(sub,sel,config)
 			--Create the relevant clip tag
 			--(as of this version, the 1 pixel overlap has been removed. Hopefully colors still look fine)
 			local clip_tag="\\clip(%d,%d,%d,%d)"
-			if do_vertical then clip_tag=clip_tag:format(clip1,clip2+cum_off+(j-1)*strip,clip3,clip2+cum_off+j*strip)
-			else clip_tag=clip_tag:format(clip1+cum_off+(j-1)*strip,clip2,clip1+cum_off+j*strip,clip4) end
+			if do_vertical then clip_tag=clip_tag:format(left,top+cum_off+(j-1)*strip,right,top+cum_off+j*strip)
+			else clip_tag=clip_tag:format(left+cum_off+(j-1)*strip,top,left+cum_off+j*strip,bottom) end
 
 			--Interpolate all the relevant parameters and insert
 			rebuilt_text=""
