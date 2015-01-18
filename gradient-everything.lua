@@ -61,6 +61,7 @@ script_version="1.0.2"
 
 --[[REQUIRE lib-lyger.lua OF VERSION 1.0 OR HIGHER]]--
 if pcall(require,"lib-lyger") and chkver("1.0") then
+local have_ASSInspector, ASSInspector = pcall(require, "ASSInspector.Inspector")
 
 --Set the location of the config file
 local config_pre=aegisub.decode_path("?user")
@@ -427,24 +428,43 @@ function gradient_everything(sub,sel,config)
 	if config["hv_select"]=="horizontal" then do_vertical=false end
 
 	local lines, left, top, right, bottom = {}
-
-	--Look for a clip statement in one of the lines
-	for si,li in ipairs(sel) do
-		this_line=sub[li]
+	-- Look for a clip statement in one of the lines
+	for i,li in ipairs(sel) do
+		lines[i] = sub[li]
+		lines[i].assi_exhaustive = true
 		left, top, right, bottom = lines[i].text:match("\\clip%(([%d%.%-]*),([%d%.%-]*),([%d%.%-]*),([%d%.%-]*)%)")
 		if left then break end
 	end
 
-	--Exit if none of the lines contain a rectangular clip
-	if left==nil then
-		aegisub.log("Please put a rectangular clip in one of the selected lines.")
+	if left then
+		left, top, right, bottom = tonumber(left), tonumber(top), tonumber(right), tonumber(bottom)
+
+	-- if no rectangular clip was found, get the combined bounding box of all selected lines
+	elseif have_ASSInspector then
+		local assi, msg = ASSInspector(sub)
+		assert(assi, "ASSInspector Error: %s.", tostring(msg))
+		local bounds, times = assi:getBounds(lines)
+		assert(bounds~=nil,"ASSInspector Error: %s.", tostring(times))
+
+		for i=1,#times do
+			local b = bounds[i]
+			if b then
+				left, top = math.min(b.x, left or b.x), math.min(b.y, top or b.y)
+				right, bottom = math.max(b.x+b.w, right or 0), math.max(b.y+b.h, bottom or 0)
+		   end
+		end
+
+		if not left then
+			aegisub.log("Nothing to gradient: The selected lines didn't render to any non-transparent pixels.")
+			return
+		else left, top, right, bottom = left-3, top-3, right+3, bottom+3 end
+
+	-- Exit if neither a clip nor the ASSInspector module have been found
+	else
+		aegisub.log("Please put a rectangular clip in one of the selected lines or install ASSInspector.")
 		return
 	end
 
-	left=tonumber(left)
-	top=tonumber(top)
-	right=tonumber(right)
-	bottom=tonumber(bottom)
 
 	--Make sure left is the left and right is the right
 	if left>right then
