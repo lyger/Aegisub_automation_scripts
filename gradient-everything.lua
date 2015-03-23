@@ -58,6 +58,7 @@ TODO: Debug, debug, and keep debugging
 script_name="Gradient everything"
 script_description="Define a bounding box, and this will gradient everything."
 script_version="1.0.2"
+script_namespace="lyger.GradientEverything"
 
 --[[REQUIRE lib-lyger.lua OF VERSION 1.0 OR HIGHER]]--
 if pcall(require,"lib-lyger") and chkver("1.0") then
