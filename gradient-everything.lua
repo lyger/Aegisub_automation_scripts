@@ -58,10 +58,11 @@ TODO: Debug, debug, and keep debugging
 script_name="Gradient everything"
 script_description="Define a bounding box, and this will gradient everything."
 script_version="1.0.2"
+script_namespace="lyger.GradientEverything"
 
 --[[REQUIRE lib-lyger.lua OF VERSION 1.0 OR HIGHER]]--
 if pcall(require,"lib-lyger") and chkver("1.0") then
-local have_ASSInspector, ASSInspector = pcall(require, "ASSInspector.Inspector")
+local have_SubInspector, SubInspector = pcall(require, "SubInspector.Inspector")
 
 --Set the location of the config file
 local config_pre=aegisub.decode_path("?user")
@@ -440,11 +441,11 @@ function gradient_everything(sub,sel,config)
 		left, top, right, bottom = tonumber(left), tonumber(top), tonumber(right), tonumber(bottom)
 
 	-- if no rectangular clip was found, get the combined bounding box of all selected lines
-	elseif have_ASSInspector then
-		local assi, msg = ASSInspector(sub)
-		assert(assi, "ASSInspector Error: %s.", tostring(msg))
+	elseif have_SubInspector then
+		local assi, msg = SubInspector(sub)
+		assert(assi, "SubInspector Error: %s.", tostring(msg))
 		local bounds, times = assi:getBounds(lines)
-		assert(bounds~=nil,"ASSInspector Error: %s.", tostring(times))
+		assert(bounds~=nil,"SubInspector Error: %s.", tostring(times))
 
 		for i=1,#times do
 			local b = bounds[i]
@@ -459,9 +460,9 @@ function gradient_everything(sub,sel,config)
 			return
 		else left, top, right, bottom = left-3, top-3, right+3, bottom+3 end
 
-	-- Exit if neither a clip nor the ASSInspector module have been found
+	-- Exit if neither a clip nor the SubInspector module have been found
 	else
-		aegisub.log("Please put a rectangular clip in one of the selected lines or install ASSInspector.")
+		aegisub.log("Please put a rectangular clip in one of the selected lines or install SubInspector.")
 		return
 	end
 
