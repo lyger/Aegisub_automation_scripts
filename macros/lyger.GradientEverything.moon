@@ -150,16 +150,25 @@ save_preset = (preset, res) ->
         preset.c.tags[k] = res[k] for k in *tags_flat
     preset\write!
 
-create_preset = (settings, name = "") ->
-    btn, res = aegisub.dialog.display {
-        { class: "label", x: 0, y: 0, width: 1, height: 1, label: "Preset Name: "   },
-        { class: "edit",  x: 0, y: 1, width: 1, height: 1, name: "name", text: name }
-    }
+create_preset = (settings, name) ->
+    msg = if not name
+        "Onii-chan, what name would you like your preset to listen to?"
+    elseif name == ""
+        "Onii-chan, did you forget to name the preset?"
+    elseif config.c.presets[name]
+        "Onii-chan, it's not good to name a preset the same thing as another one~"
 
-    if btn
-        preset = config\getSectionHandler {"presets", res.name}, preset_defaults
-        save_preset preset, settings
-        return res.name
+    if msg
+        btn, res = aegisub.dialog.display {
+            { class: "label", x: 0, y: 0, width: 2, height: 1, label: msg               }
+            { class: "label", x: 0, y: 1, width: 1, height: 1, label: "Preset Name: "   },
+            { class: "edit",  x: 1, y: 1, width: 1, height: 1, name: "name", text: name }
+        }
+        return btn and create_preset settings, res.name
+
+    preset = config\getSectionHandler {"presets", name}, preset_defaults
+    save_preset preset, settings
+    return name
 
 -- Remove listed tags from any \t functions in the text
 time_exclude = (text, exclude) ->
