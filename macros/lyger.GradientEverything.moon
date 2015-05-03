@@ -64,7 +64,7 @@ DependencyControl = require "l0.DependencyControl"
 rec = DependencyControl{
     feed: "https://raw.githubusercontent.com/TypesettingTools/lyger-Aegisub-Scripts/master/DependencyControl.json",
     {
-        "aegisub.util", "karaskel",
+        "aegisub.util",
         {"lyger.LibLyger", version: "1.1.0", url: "http://github.com/TypesettingTools/lyger-Aegisub-Scripts"},
         {"l0.ASSFoundation.Common", version: "0.2.0", url: "https://github.com/TypesettingTools/ASSFoundation",
          feed: "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"},
@@ -73,9 +73,9 @@ rec = DependencyControl{
          optional: true}
     }
 }
-util, totallyNotKaraskel, LibLyger, Common, SubInspector = rec\requireModules!
+util, LibLyger, Common, SubInspector = rec\requireModules!
 have_SubInspector = rec\checkOptionalModules "SubInspector.Inspector"
-logger = rec\getLogger!
+logger, libLyger = rec\getLogger!, LibLyger!
 
 -- tag list, grouped by dialog layout
 tags_grouped = {
@@ -188,7 +188,7 @@ make_state_table = (line_table, tag_table) ->
     this_state_table = {}
     for i, val in ipairs line_table
         temp_line_table = {}
-        pstate = LibLyger.line_exclude_except(val.tag, tag_table)
+        pstate = libLyger\line_exclude_except val.tag, tag_table
         for j, ctag in ipairs tag_table
             -- param MUST start in a non-alpha character, because ctag will never be \r or \fn
             -- If it is, you fucked up
@@ -221,16 +221,14 @@ match_splits = (line_table1, line_table2) ->
 
     return line_table1, line_table2
 
-prepare_line = (sub, sel, i, script) ->
+prepare_line = (sub, sel, i) ->
     line = sub[sel[i]]
     line.comment = true
     sub[sel[i]] = line
 
-    -- Preprocess
-    karaskel.preproc_line sub, script.meta, script.styles, line
     -- Figure out the correct position and origin values
-    posx, posy = LibLyger.get_pos line, script.info
-    orgx, orgy = LibLyger.get_org line, script.info
+    posx, posy = libLyger\get_pos line
+    orgx, orgy = libLyger\get_org line
     -- Make sure each line starts with tags
     line.text = "{}#{line.text}" unless line.text\find "^{"
     -- Turn all \1c tags into \c tags, just for convenience
@@ -242,9 +240,9 @@ prepare_line = (sub, sel, i, script) ->
     return line, line_table, posx, posy, orgx, orgy
 
 interpolate_point = (tag, text, sposx, eposx, sposy, eposy, factor) ->
-    text = LibLyger.line_exclude text, {tag}
-    posx = LibLyger.float2str util.interpolate factor, sposx, eposx
-    posy = LibLyger.float2str util.interpolate factor, sposy, eposy
+    text = libLyger\line_exclude text, {tag}
+    posx = libLyger.float2str util.interpolate factor, sposx, eposx
+    posy = libLyger.float2str util.interpolate factor, sposy, eposy
     return text\gsub "^{", "{\\#{tag}(#{posx},#{posy})"
 
 -- The main body of code that runs the frame transform
@@ -254,11 +252,9 @@ gradient_everything = (sub, sel, res) ->
     save_preset preset, res
 
     line_cnt, lines, bounds = #sel, {}, {}
+    libLyger\set_sub sub
     -- nothing to if not at least 2 lines were selected
     return if line_cnt < 2
-    -- Get some script information
-    meta, styles = karaskel.collect_head sub, false
-    script = {info: util.getScriptInfo(sub), :meta, :styles}
     -- These are the tags to transform
     transform_tags = [tag for tag in *tags_flat when preset.c.tags[tag]]
 
@@ -328,8 +324,8 @@ gradient_everything = (sub, sel, res) ->
     -- First cycle through all the selected "intervals" (pairs of two consecutive selected lines)
     for i = 2, line_cnt
         -- Read the first and last lines
-        first_line, start_table, sposx, sposy, sorgx, sorgy = prepare_line sub, sel, i-1, script
-        last_line, end_table, eposx, eposy, eorgx, eorgy = prepare_line sub, sel, i, script
+        first_line, start_table, sposx, sposy, sorgx, sorgy = prepare_line sub, sel, i-1
+        last_line, end_table, eposx, eposy, eorgx, eorgy = prepare_line sub, sel, i
 
         -- Make sure both lines have the same splits
         match_splits start_table, end_table
@@ -341,8 +337,8 @@ gradient_everything = (sub, sel, res) ->
 
         -- Insert default values when not included for the state of each tag block,
         -- or inherit values from previous tag block
-        start_style = LibLyger.style_lookup first_line
-        end_style =   LibLyger.style_lookup last_line
+        start_style = libLyger\style_lookup first_line
+        end_style =   libLyger\style_lookup last_line
 
         current_start_state, current_end_state = {}, {}
 
@@ -363,7 +359,7 @@ gradient_everything = (sub, sel, res) ->
                 start_state_table[k][ekey] or= current_start_state[ekey] or start_style[ekey]
 
         -- Create a line table based on first_line, but without relevant tags
-        stripped = LibLyger.line_exclude first_line.text, table.join transform_tags, {"clip"}
+        stripped = libLyger\line_exclude first_line.text, table.join transform_tags, {"clip"}
         this_table = [{:tag, :text} for tag, text in stripped\gmatch "({[^{}]*})([^{}]*)"]
 
         -- Inner control loop
@@ -397,7 +393,7 @@ gradient_everything = (sub, sel, res) ->
                 for ctag, param in pairs start_state_table[k]
                     temp_tag = temp_tag\gsub "}", ->
                         tval_start, tval_end = start_state_table[k][ctag], end_state_table[k][ctag]
-                        tag_type = LibLyger.param_type[ctag]
+                        tag_type = libLyger.param_type[ctag]
                         ivalue = switch tag_type
                             when "alpha"
                                 util.interpolate_alpha factor, tval_start, tval_end
@@ -415,7 +411,7 @@ gradient_everything = (sub, sel, res) ->
                                 nvalue = util.interpolate factor, nstart, nend
                                 nvalue += 360 if tag_type == "angle" and nvalue < 0
 
-                                LibLyger.float2str nvalue
+                                libLyger.float2str nvalue
                             else ""
 
                         -- check for redundancy
