@@ -16,27 +16,22 @@ convenience above all, so it runs with a single button press and no time-consumi
 
 ]]--
 
-script_name="Gradient by character"
-script_description="Smoothly transforms tags across your line, by character."
-script_version="1.2.1"
+script_name = "Gradient by character"
+script_description = "Smoothly transforms tags across your line, by character."
+script_version = "1.2.1"
+script_author = "lyger"
+script_namespace = "lyger.GradientByChar"
 
-re = require 'aegisub.re'
-
---[[REQUIRE lib-lyger.lua OF VERSION 1.0 OR HIGHER]]--
-if pcall(require,"lib-lyger") and chkver("1.0") then
-
-
-
---Creates a deep copy of the given table
-local function deep_copy(source_table)
-	new_table={}
-	for key,value in pairs(source_table) do
-		--Let's hope the recursion doesn't break things
-		if type(value)=="table" then value=deep_copy(value) end
-		new_table[key]=value
-	end
-	return new_table
-end
+local DependencyControl = require("l0.DependencyControl")
+local rec = DependencyControl{
+    feed = "https://raw.githubusercontent.com/TypesettingTools/lyger-Aegisub-Scripts/master/DependencyControl.json",
+    {
+    	{"lyger.libLyger", version = "1.1.0", url = "http://github.com/TypesettingTools/lyger-Aegisub-Scripts"},
+    	"aegisub.util", "aegisub.re"
+	}
+}
+local LibLyger, util, re = rec:requireModules()
+local libLyger = LibLyger()
 
 --Remove listed tags from any \t functions in the text
 local function time_exclude(text,exclude)
@@ -66,7 +61,7 @@ local function make_state_table(line_table,tag_table)
 	local this_state_table={}
 	for i,val in ipairs(line_table) do
 		temp_line_table={}
-		pstate=line_exclude_except(val.tag,tag_table)
+		pstate = libLyger:line_exclude_except(val.tag,tag_table)
 		for j,ctag in ipairs(tag_table) do
 			--param MUST start in a non-alpha character, because ctag will never be \r or \fn
 			--If it is, you fucked up
@@ -81,22 +76,18 @@ local function make_state_table(line_table,tag_table)
 end
 
 function grad_char(sub,sel)
+	libLyger:set_sub(sub, sel)
 
-	local meta,styles = karaskel.collect_head(sub, false)
-	
 	for si,li in ipairs(sel) do
 		--Read in the line
-		this_line=sub[li]
-		
-		--Preprocess
-		karaskel.preproc_line(sub,meta,styles,this_line)
-		
+		this_line=libLyger.lines[li]
+
 		--Make sure line starts with tags
 		if this_line.text:find("^{")==nil then this_line.text="{}"..this_line.text end
-		
+
 		--Turn all \1c tags into \c tags, just for convenience
 		this_line.text=this_line.text:gsub("\\1c","\\c")
-			
+
 		--Make line table
 		this_table={}
 		x=1
@@ -104,12 +95,12 @@ function grad_char(sub,sel)
 			this_table[x]={tag=thistag,text=thistext:gsub("\t","")}
 			x=x+1
 		end
-		
+
 		if #this_table<2 then
 			aegisub.log("There must be more than one tag block in the line!")
 			return
 		end
-		
+
 		--Transform these tags
 		transform_tags={
 			"c","2c","3c","4c",
@@ -121,29 +112,29 @@ function grad_char(sub,sel)
 			"xbord","ybord","xshad","yshad",
 			"blur","be"
 			}
-		
+
 		--Make state table
 		this_state=make_state_table(this_table,transform_tags)
-		
+
 		--Style lookup
-		this_style=style_lookup(this_line)
-		
+		this_style = libLyger:style_lookup(this_line)
+
 		--Running record of the state of the line
 		current_state={}
-		
+
 		--Outer control loop
 		for i=2,#this_table,1 do
 			--Update current state
 			for ctag,cval in pairs(this_state[i-1]) do
 				current_state[ctag]=cval
 			end
-			
+
 			--Stores state of each character, to prevent redundant tags
-			char_state=deep_copy(current_state)
-			
+			char_state=util.deep_copy(current_state)
+
 			--Local function for interpolation
 			local function handle_interpolation(factor,tag,sval,eval)
-				local ivalue=""
+				local param_type, ivalue = libLyger.param_type, ""
 				--Handle differently depending on the type of tag
 				if param_type[tag]=="alpha" then
 					ivalue=interpolate_alpha(factor,sval,eval)
@@ -152,85 +143,85 @@ function grad_char(sub,sel)
 				elseif param_type[tag]=="angle" then
 					nstart=tonumber(sval)
 					nend=tonumber(eval)
-					
+
 					--Use "Rotate in shortest direction" by default
 					nstart=nstart%360
 					nend=nend%360
 					ndelta=nend-nstart
 					if math.abs(ndelta)>180 then nstart=nstart+(ndelta*360)/math.abs(ndelta) end
-					
+
 					--Interpolate
 					nvalue=interpolate(factor,nstart,nend)
 					if nvalue<0 then nvalue=nvalue+360 end
-					
+
 					--Convert to string
-					ivalue=float2str(nvalue)
-					
+					ivalue=libLyger.float2str(nvalue)
+
 				elseif param_type[tag]=="number" then
 					nstart=tonumber(sval)
 					nend=tonumber(eval)
-					
+
 					--Interpolate and convert to string
-					ivalue=float2str(interpolate(factor,nstart,nend))
+					ivalue=libLyger.float2str(interpolate(factor,nstart,nend))
 				end
 				return ivalue
 			end
-			
+
 			--Replace \N with newline character, so it's treated as one character
 			local ttext=this_table[i-1].text:gsub("\\N","\n")
-			
+
 			if ttext:len()>0 then
-			
+
 				--Rebuilt text
 				local rtext=""
-				
+
 				--Skip the first character
 				local first=true
-				
+
 				--Starting values
 				idx=1
-				
+
 				matches=re.find(ttext,'\\X')
-				
+
 				total=#matches
-					
+
 				for _,match in ipairs(matches) do
-					
+
 					ch=match.str
-					
+
 					if not first then
 						--Interpolation factor
 						factor=idx/total
-						
+
 						idx=idx+1
-						
+
 						--Do nothing if the character is a space
 						if ch:find("%s")~=nil then
 							rtext=rtext..ch
 						else
-						
+
 							--The tags in and out of the time statement
 							local non_time_tags=""
-							
+
 							--Go through all the state tags in this tag block
 							for ttag,tparam in pairs(this_state[i]) do
 								--Figure out the starting state of the param
 								local sparam=current_state[ttag]
 								if sparam==nil then sparam=this_style[ttag] end
 								if type(sparam)~="number" then sparam=sparam:gsub("%)","") end--Just in case a \t tag snuck in
-								
+
 								--Prevent redundancy
 								if sparam~=tparam then
 									--The string version of the interpolated parameter
 									local iparam=handle_interpolation(factor,ttag,sparam,tparam)
-									
+
 									if iparam~=tostring(char_state[ttag]) then
 										non_time_tags=non_time_tags.."\\"..ttag..iparam
 										char_state[ttag]=iparam
 									end
 								end
 							end
-						
+
 							if non_time_tags:len() < 1 then
 								--If no tags were added, do nothing
 								rtext=rtext..ch
@@ -238,30 +229,30 @@ function grad_char(sub,sel)
 								--The final tag, with a star to indicate it was added through interpolation
 								rtext=rtext.."{*"..non_time_tags.."}"..ch
 							end
-							
+
 						end
 					else
 						rtext=rtext..ch
 					end
 					first=false
 				end
-			
+
 				--Put \N back in
 				this_table[i-1].text=rtext:gsub("\n","\\N")
-			
+
 			end
-			
+
 		end
-		
+
 		rebuilt_text=""
-		
+
 		for i,val in pairs(this_table) do
 			rebuilt_text=rebuilt_text..val.tag..val.text
 		end
 		this_line.text=rebuilt_text
 		sub[li]=this_line
 	end
-	
+
 	aegisub.set_undo_point(script_name)
 end
 
@@ -273,25 +264,8 @@ function remove_grad_char(sub,sel)
 	end
 end
 
---Register the macro
-aegisub.register_macro(script_name,script_description,grad_char)
-aegisub.register_macro(script_name.." - un-gradient","Removes gradient generated by "..script_name,remove_grad_char)
-
-
-
-
---[[HANDLING FOR lib-lyger.lua NOT FOUND CASE]]--
-else
-require "clipboard"
-function lib_err()
-	aegisub.dialog.display({{class="label",
-		label="lib-lyger.lua is missing or out-of-date.\n"..
-		"Please go to:\n\n"..
-		"https://github.com/lyger/Aegisub_automation_scripts\n\n"..
-		"and download the latest version of lib-lyger.lua.\n"..
-		"(The URL will be copied to your clipboard once you click OK)",
-		x=0,y=0,width=1,height=1}})
-	clipboard.set("https://github.com/lyger/Aegisub_automation_scripts")
-end
-aegisub.register_macro(script_name,script_description,lib_err)
-end
+-- Register the macro
+rec:registerMacros{
+    {"Apply Gradient", script_description, grad_char},
+    {"Remove Gradient", "Removes gradient generated by #{script_name}", remove_grad_char}
+}
