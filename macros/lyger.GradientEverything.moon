@@ -198,10 +198,10 @@ make_state_table = (line_table, tag_table) ->
         this_state_table[i] = temp_line_table
     return this_state_table
 
-prepare_line = (sub, sel, i) ->
-    line = sub[sel[i]]
+prepare_line = (i) ->
+    line = libLyger.lines[libLyger.sel[i]]
     line.comment = true
-    sub[sel[i]] = line
+    libLyger.sub[line.i] = line
 
     -- Figure out the correct position and origin values
     posx, posy = libLyger\get_pos line
@@ -229,7 +229,7 @@ gradient_everything = (sub, sel, res) ->
     save_preset preset, res
 
     line_cnt, lines, bounds = #sel, {}, {}
-    libLyger\set_sub sub
+    libLyger\set_sub sub, sel
     -- nothing to if not at least 2 lines were selected
     return if line_cnt < 2
     -- These are the tags to transform
@@ -301,8 +301,8 @@ gradient_everything = (sub, sel, res) ->
     -- First cycle through all the selected "intervals" (pairs of two consecutive selected lines)
     for i = 2, line_cnt
         -- Read the first and last lines
-        first_line, start_table, sposx, sposy, sorgx, sorgy = prepare_line sub, sel, i-1
-        last_line, end_table, eposx, eposy, eorgx, eorgy = prepare_line sub, sel, i
+        first_line, start_table, sposx, sposy, sorgx, sorgy = prepare_line i-1
+        last_line, end_table, eposx, eposy, eorgx, eorgy = prepare_line i
 
         -- Make sure both lines have the same splits
         libLyger.match_splits start_table, end_table
