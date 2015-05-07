@@ -591,4 +591,4 @@ function dup_blur(sub, sel, act)
     aegisub.set_undo_point("Duplicate and blur")
 end
 
-aegisub.register_macro(script_name, script_description, dup_blur)
+rec:registerMacro(dup_blur)
