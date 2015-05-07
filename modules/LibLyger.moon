@@ -236,6 +236,28 @@ class LibLyger
             be:    0
         }
 
+    -- Modify the line tables so they are split at the same locations
+    match_splits: (line_table1, line_table2) ->
+        for i=1, #line_table1
+            text1 = line_table1[i].text
+            text2 = line_table2[i].text
+
+            insert = (target, text, i) ->
+                for j = #target, i+1, -1
+                    target[j+1] = target[j]
+
+                target[i+1] = tag: "{}", text: target[i].text\match "#{text}(.*)"
+                target[i] = tag: target[i].tag, :text
+
+            if #text1 > #text2
+                -- If the table1 item has longer text, break it in two based on the text of table2
+                insert line_table1, text2, i
+            elseif #text2 > #text1
+                -- If the table2 item has longer text, break it in two based on the text of table1
+                insert line_table2, text1, i
+
+        return line_table1, line_table2
+
     :version
 
 return version\register LibLyger

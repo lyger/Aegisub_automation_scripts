@@ -198,29 +198,6 @@ make_state_table = (line_table, tag_table) ->
         this_state_table[i] = temp_line_table
     return this_state_table
 
-
--- Modify the line tables so they are split at the same locations
-match_splits = (line_table1, line_table2) ->
-    for i=1, #line_table1
-        text1 =line_table1[i].text
-        text2 = line_table2[i].text
-
-        insert = (target, text, i) ->
-            for j = #target, i+1, -1
-                target[j+1] = target[j]
-
-            target[i+1] = tag: "{}", text: target[i].text\match "#{text}(.*)"
-            target[i] = tag: target[i].tag, :text
-
-        if #text1 > #text2
-            -- If the table1 item has longer text, break it in two based on the text of table2
-            insert line_table1, text2, i
-        else
-            -- If the table2 item has longer text, break it in two based on the text of table1
-            insert line_table2, text1, i
-
-    return line_table1, line_table2
-
 prepare_line = (sub, sel, i) ->
     line = sub[sel[i]]
     line.comment = true
@@ -328,7 +305,7 @@ gradient_everything = (sub, sel, res) ->
         last_line, end_table, eposx, eposy, eorgx, eorgy = prepare_line sub, sel, i
 
         -- Make sure both lines have the same splits
-        match_splits start_table, end_table
+        libLyger.match_splits start_table, end_table
 
         -- Tables that store tables for each tag block, consisting of the state of all relevant tags
         -- that are in the transform_tags table
