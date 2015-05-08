@@ -11,16 +11,26 @@ Will add more features as ktimers suggest them to me.
 
 ]]--
 
-script_name="Karaoke helper"
-script_description="Miscellaneous tools for assisting in karaoke timing."
-script_version="0.1"
+script_name = "Karaoke helper"
+script_description = "Miscellaneous tools for assisting in karaoke timing."
+script_version = "0.1.0"
+script_author = "lyger"
+script_namespace = "lyger.KaraHelper"
 
-include("karaskel.lua")
+local DependencyControl = require("l0.DependencyControl")
+local rec = DependencyControl{
+    feed = "https://raw.githubusercontent.com/TypesettingTools/lyger-Aegisub-Scripts/master/DependencyControl.json",
+    {
+        {"lyger.libLyger", version = "1.1.0", url = "http://github.com/TypesettingTools/lyger-Aegisub-Scripts"},
+    }
+}
+local LibLyger = rec:requireModules()
+local libLyger = LibLyger()
 
 function make_config(styles)
 	local stopts={"selected lines"}
 	for i=1,styles.n,1 do
-		table.insert(stopts,string.format("style: %q",styles[i].name))
+		stopts[i+1] = ("style: %q").format(styles[i].name)
 	end
 	local config=
 	{
@@ -85,7 +95,7 @@ function match_durs(line)
 	local delta=math.floor(ldur/10)-cum_sdur
 	line.text=line.text:gsub("({[^{}]*\\[Kk][fo]?)(%d+)([^{}]*}[^{}]*)$",
 		function(pre,val,post)
-			return pre..string.format("%d",tonumber(val)+delta)..post
+			return ("%s%d%s"):format(pre, tonumber(val)+delta, post)
 		end)
 	return line
 end
@@ -94,11 +104,11 @@ end
 function add_prepad(line,pdur)
 	line.text=line.text:gsub("^({[^{}]*\\[Kk][fo]?)(%d+)",
 		function(pre,val)
-			return string.format("{\\k%d}",pdur)..pre..string.format("%d",tonumber(val)-pdur)
+			return ("{\\k%d}%s%d"):format(pdur, pre, tonumber(val)-pdur)
 		end)
 	line.text=line.text:gsub("^{\\k(%d+)}({[^{}]*\\[Kk][fo]?)(%-?%d+)([^{}]*}{)",
 		function(val1,mid,val2,post)
-			return mid..string.format("%d",tonumber(val1)+tonumber(val2))..post
+			return ("%s%d%s"):format(mid, tonumber(val1)+tonumber(val2), post)
 		end)
 	return line
 end
@@ -107,73 +117,59 @@ end
 function add_postpad(line,pdur)
 	line.text=line.text:gsub("(\\[Kk][fo]?)(%d+)([^{}]*}[^{}]*)$",
 		function(pre,val,post)
-			return pre..string.format("%d",tonumber(val)-pdur)..post..string.format("{\\k%d}",pdur)
+			return ("%s%d%s{\\k%d}"):format(pre, tonumber(val)-pdur, post, pdur)
 		end)
 	line.text=line.text:gsub("(\\[Kk][fo]?)(%-?%d+)([^{}]*}){\\k(%d+)}$",
 		function(pre,val1,mid,val2)
-			return pre..string.format("%d",tonumber(val1)+tonumber(val2))..mid
+			return ("%s%d%s"):format(pre, tonumber(val1)+tonumber(val2), mid)
 		end)
 	return line
 end
 
 --Load config and display
 function load_kh(sub,sel)
-	
-	--Basic header collection, config, dialog display
-	local meta,styles=karaskel.collect_head(sub,false)
-	local config=make_config(styles)
-	
-	pressed,results=aegisub.dialog.display(config)
-	
+	libLyger:set_sub(sub, sel)
+
+	-- Basic header collection, config, dialog display
+	local config = make_config(libLyger.styles)
+	local pressed,results=aegisub.dialog.display(config)
 	if pressed=="Cancel" then aegisub.cancel() end
-	
+
 	--Determine how to retrieve the next line, based on the dropdown selection
-	local tstyle=results["sselect"]
-	
-	local get_next,add_line=nil,nil
-	local uindex=0
-	local line=nil
-	
-	if tstyle:match("^style: ")~=nil then
+	local tstyle, line_cnt, get_next = results["sselect"], #sub
+
+	if tstyle:match("^style: ") then
 		tstyle=tstyle:match("^style: \"(.+)\"$")
-		get_next=function()
-			repeat
-				uindex=uindex+1
-				if uindex>#sub then return 0 end
-				line=sub[uindex]
-			until line.style==tstyle and (line.comment==false or line.effect=="karaoke")
-			return 1
-		end
-		
-		add_line=function()
-			sub[uindex]=line
+		get_next = function(uindex)
+			for i = uindex, line_cnt do
+				local line = libLyger.dialogue[uindex]
+				if line.style == tstyle and (not line.comment or line.effect == "karaoke") then
+					return line, i
+				end
+			end
 		end
 	else
-		get_next=function()
-			uindex=uindex+1
-			if uindex>#sel then return 0 end
-			line=sub[sel[uindex]]
-			return 1
-		end
-		add_line=function()
-			sub[sel[uindex]]=line
+		get_next = function(uindex)
+			if uindex <= #sel then
+				return libLyger.lines[sel[uindex]], uindex+1
+			end
 		end
 	end
-	
+
 	--Control loop
-	while get_next()>0 do
-		if results["match"] then line=match_durs(line) end
-		if results["leadin"] then line=add_prepad(line,results["leadindur"]) end
-		if results["leadout"] then line=add_postpad(line,results["leadoutdur"]) end
-		add_line()
+	local line, uindex = get_next(1)
+	while line do
+		if results["match"] then match_durs(line) end
+		if results["leadin"] then add_prepad(line, results["leadindur"]) end
+		if results["leadout"] then add_postpad(line, results["leadoutdur"]) end
+		sub[line.i] = line
+		line, uindex = get_next(uindex)
 	end
-	
+
 	aegisub.set_undo_point(script_name)
 end
 
-
-aegisub.register_macro(script_name,script_description,load_kh)
-
+rec:registerMacro(load_kh)
 
 
 
