@@ -33,48 +33,6 @@ local rec = DependencyControl{
 local LibLyger, util, re = rec:requireModules()
 local libLyger = LibLyger()
 
---Remove listed tags from any \t functions in the text
-local function time_exclude(text,exclude)
-	text=text:gsub("(\\t%b())",
-		function(a)
-			b=a
-			for y=1,#exclude,1 do
-				if(string.find(a,"\\"..exclude[y])~=nil) then
-					if exclude[y]=="clip" then
-						b=b:gsub("\\"..exclude[y].."%b()","")
-					else
-						b=b:gsub("\\"..exclude[y].."[^\\%)]*","")
-					end
-				end
-			end
-			return b
-		end
-		)
-	--get rid of empty blocks
-	text=text:gsub("\\t%([%-%.%d,]*%)","")
-	return text
-end
-
---Returns a state table, restricted by the tags given in "tag_table"
---WILL NOT WORK FOR \fn AND \r
-local function make_state_table(line_table,tag_table)
-	local this_state_table={}
-	for i,val in ipairs(line_table) do
-		temp_line_table={}
-		pstate = libLyger.line_exclude_except(val.tag,tag_table)
-		for j,ctag in ipairs(tag_table) do
-			--param MUST start in a non-alpha character, because ctag will never be \r or \fn
-			--If it is, you fucked up
-			_,_,param=pstate:find("\\"..ctag.."(%A[^\\{}]*)")
-			if param~=nil then
-				temp_line_table[ctag]=param
-			end
-		end
-		this_state_table[i]=temp_line_table
-	end
-	return this_state_table
-end
-
 function grad_char(sub,sel)
 	libLyger:set_sub(sub, sel)
 
@@ -114,7 +72,7 @@ function grad_char(sub,sel)
 			}
 
 		--Make state table
-		this_state=make_state_table(this_table,transform_tags)
+		this_state = LibLyger.make_state_table(this_table,transform_tags)
 
 		--Style lookup
 		this_style = libLyger:style_lookup(this_line)

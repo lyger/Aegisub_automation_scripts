@@ -144,51 +144,6 @@ Otherwise, the first character after the tag declaration must be:
 a number, decimal point, open parentheses, minus sign, or ampersand
 ]]--
 
---Remove listed tags from the given text
-local function line_exclude(text, ...)
-    local exclude={...}
-    for y=1,#exclude,1 do
-        if(text~=nil) then
-            if(string.find(text,"\\"..exclude[y])~=nil) then
-                --\fn or \r can be followed by any string
-                if exclude[y]=="fn" or exclude[y]=="r" then
-                    text=string.gsub(text,"\\"..exclude[y].."[%w%.%(%),&%s]*","")
-                elseif exclude[y]=="t" then
-                    text=string.gsub(text,"\\"..exclude[y].."%b()","") --%([%w%.%(%),&%s\\]-%)
-                --other tags can be delimited by the expression [%d%.%(%-&]
-                else
-                    text=string.gsub(text,"\\"..exclude[y].."[%d%.%b()%-&][^}\\%)]*","")
-                end
-            end
-        end
-    end
-    --get rid of empty blocks
-    text=string.gsub(text,"{}","")
-    return text
-end
-
---Remove listed tags from any \t functions in the text
-local function time_exclude(text,...)
-    local exclude={...}
-    text=text:gsub("(\\t%b())",
-        function(a)
-            b=a
-            for y=1,#exclude,1 do
-                if(string.find(a,"\\"..exclude[y])~=nil) then
-                    if exclude[y]=="clip" then
-                        b=b:gsub("\\"..exclude[y].."%b()","")
-                    else
-                        b=b:gsub("\\"..exclude[y].."[^\\%)]*","")
-                    end
-                end
-            end
-            return b
-        end
-        )
-    --get rid of empty blocks
-    text=text:gsub("\\t%([%d,]*%)","")
-    return text
-end
 
 --Add tags to the first code block in a line
 local function give_head(text, addtags)
@@ -285,7 +240,7 @@ end
 function dup_blur_a(line,line1,line2)
 
     --ignore anything in \t tags
-    local timeless_line=line_exclude(line1.text,"t")
+    local timeless_line=LibLyger.line_exclude(line1.text,"t")
 
     --read in the border and blur amounts
     local _,_,border = string.find(timeless_line,"\\bord([%d%.]+)")
@@ -303,7 +258,7 @@ function dup_blur_a(line,line1,line2)
     end
 
     --line1 is the top line set to main color, so remove 3c and 3a tags and make 3c the same as 1c
-    line1.text=line_exclude(line1.text,"bord","3c","3a","shad","xshad","yshad")
+    line1.text=LibLyger.line_exclude(line1.text,"bord","3c","3a","shad","xshad","yshad")
     line1.text=sub_colors(line1,1,3)
     --make 3a the same as 1a
     line1.text=sub_alpha(line1,1,3)
@@ -323,7 +278,7 @@ function dup_blur_a(line,line1,line2)
 
 
     --line2 is the bottom line set to border color, so remove 1c and 1a tags
-    line2.text=line_exclude(line2.text,"c","1c","1a")
+    line2.text=LibLyger.line_exclude(line2.text,"c","1c","1a")
     --if the original line contained no blur, default to default_blur
     blur=tonumber(blur)
     line2.text=line2.text:gsub("\\bord([%d%.]+)",
@@ -341,7 +296,7 @@ end
 function dup_blur_s(line,line1,line2)
 
     --ignore anything in \t tags
-    local timeless_line=line_exclude(line.text,"t")
+    local timeless_line=LibLyger.line_exclude(line.text,"t")
 
     --read in the border and blur amounts
     local _,_,border = string.find(timeless_line,"\\bord([%d%.]+)")
@@ -354,8 +309,8 @@ function dup_blur_s(line,line1,line2)
     end
 
     --line1 is the top line set to main color, so remove 3c and 3a tags
-    line1.text=line_exclude(line1.text,"3c","3a","shad","xshad","yshad")
-    line1.text=time_exclude(line1.text,"bord")
+    line1.text=LibLyger.line_exclude(line1.text,"3c","3a","shad","xshad","yshad")
+    line1.text=LibLyger.time_exclude(line1.text,"bord")
     --if there is no border by default, delete the bord tag. Otherwise, set bord tag to zero
     if line.styleref.outline==0 then
         --if the original line contained no blur, default to default_blur
@@ -380,7 +335,7 @@ function dup_blur_s(line,line1,line2)
     line1.text=line1.text:gsub("\\t%([%d,]*%)","")
 
     --line2 is the bottom line set to border color, so remove 1c and 1a tags and make 1c the same as 3c
-    line2.text=line_exclude(line2.text,"c","1c","1a")
+    line2.text=LibLyger.line_exclude(line2.text,"c","1c","1a")
     line2.text=sub_colors(line2,3,1)
     --if the original line contained no blur, default to default_blur
     if blur==nil then
@@ -396,7 +351,7 @@ end
 --handle the third line for the "d" option
 function double_border(line3,mode,opts)
     --ignore anything in \t tags
-    local timeless_line=line_exclude(line3.text,"t")
+    local timeless_line=LibLyger.line_exclude(line3.text,"t")
 
     --read in the border and blur amounts
     local _,_,border = string.find(timeless_line,"\\bord([%d%.]+)")
@@ -417,10 +372,10 @@ function double_border(line3,mode,opts)
     end
     blur=tonumber(blur)
 
-    line3.text=line_exclude(line3.text,"3c")
+    line3.text=LibLyger.line_exclude(line3.text,"3c")
     line3.text=sub_colors(line3,1,3)
     if mode=="a" then
-        line3.text=line_exclude(line3.text,"alpha","1a")
+        line3.text=LibLyger.line_exclude(line3.text,"alpha","1a")
         line3.text=line3.text:gsub("\\bord([%d%.]+)",
             function(a) return "\\bord"..float2str(tonumber(a)*2+blur) end)
         line3.text=give_head(line3.text,"\\1a&HFF&")
@@ -434,7 +389,7 @@ end
 --shadow split
 function shad_blur(line,line1,line2)
     --ignore anything in \t tags
-    local timeless_line=line_exclude(line.text,"t")
+    local timeless_line=LibLyger.line_exclude(line.text,"t")
 
     --read in the border, shadow, and blur amounts
     local _,_,border = string.find(timeless_line,"\\bord([%d%.]+)")
@@ -456,8 +411,8 @@ function shad_blur(line,line1,line2)
     yshad=tonumber(yshad)
 
     --line1 is the top line with no shadow, so remove all shadow related tags
-    line1.text=line_exclude(line1.text,"4c","4a","shad","xshad","yshad")
-    --line1.text=time_exclude(line1.text,"shad","xshad","yshad")
+    line1.text=LibLyger.line_exclude(line1.text,"4c","4a","shad","xshad","yshad")
+    --line1.text=LibLyger.time_exclude(line1.text,"shad","xshad","yshad")
 
     --make color 1 and 3 the same as color 4 for line2
     line2.text=sub_colors(line2,4,1)
@@ -466,8 +421,8 @@ function shad_blur(line,line1,line2)
     line2.text=sub_alpha(line2,4,1)
     if border>0 then line2.text=sub_alpha(line2,4,3) end
     --now remove the shadow tags, as they're no longer needed
-    line2.text=line_exclude(line2.text,"4c","4a","shad","xshad","yshad")
-    --line2.text=time_exclude(line2.text,"shad","xshad","yshad")
+    line2.text=LibLyger.line_exclude(line2.text,"4c","4a","shad","xshad","yshad")
+    --line2.text=LibLyger.time_exclude(line2.text,"shad","xshad","yshad")
 
     --THE FOLLOWING IS TEMPORARY CODE JUST SO IT'LL WORK FOR WHAT I NEED TODAY
     if line2.text:find("\\pos") == nil then
@@ -569,7 +524,7 @@ function dup_blur(sub, sel, act)
                 line1.layer=line1.layer+1
                 line2.layer=line2.layer+1
                 --kill shadows
-                line2.text=line_exclude(line2.text,"shad","xshad","yshad")
+                line2.text=LibLyger.line_exclude(line2.text,"shad","xshad","yshad")
                 if line2.styleref.shadow~=0 then line2.text=give_head(line2.text,"\\shad0") end
             end
 

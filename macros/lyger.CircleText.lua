@@ -29,11 +29,16 @@ script_author = "lyger"
 script_namespace = "lyger.CircleText"
 
 local DependencyControl = require("l0.DependencyControl")
+local DependencyControl = require("l0.DependencyControl")
 local rec = DependencyControl{
     feed = "https://raw.githubusercontent.com/TypesettingTools/lyger-Aegisub-Scripts/master/DependencyControl.json",
-    {"aegisub.util", "karaskel"}
+    {
+        {"lyger.libLyger", version = "1.1.0", url = "http://github.com/TypesettingTools/lyger-Aegisub-Scripts"},
+        "aegisub.util"
+    }
 }
-local util = rec:requireModules()
+local LibLyger, util = rec:requireModules()
+local libLyger = LibLyger()
 
 --[[
 Tags that can have any character after the tag declaration:
@@ -43,106 +48,6 @@ Otherwise, the first character after the tag declaration must be:
 a number, decimal point, open parentheses, minus sign, or ampersand
 ]]--
 
---Remove listed tags from the given text
-local function line_exclude(text, exclude)
-	remove_t=false
-	local new_text=text:gsub("\\([^\\{}]*)",
-		function(a)
-			if a:find("^r")~=nil then
-				for i,val in ipairs(exclude) do
-					if val=="r" then return "" end
-				end
-			elseif a:find("^fn")~=nil then
-				for i,val in ipairs(exclude) do
-					if val=="fn" then return "" end
-				end
-			else
-				_,_,tag=a:find("^([1-4]?%a+)")
-				for i,val in ipairs(exclude) do
-					if val==tag then
-						--Hacky exception handling for \t statements
-						if val=="t" then
-							remove_t=true
-							return "\\"..a
-						end
-						return ""
-					end
-				end
-			end
-			return "\\"..a
-		end)
-	if remove_t then
-		text=text:gsub("\\t%b()","")
-	end
-	return new_text
-end
-
---Returns the position of a line
-local function get_pos(line)
-	local _,_,posx,posy=line.text:find("\\pos%(([%d%.%-]*),([%d%.%-]*)%)")
-	if posx==nil then
-		_,_,posx,posy=line.text:find("\\move%(([%d%.%-]*),([%d%.%-]*),")
-		if posx==nil then
-			_,_,align_n=line.text:find("\\an([%d%.%-]*)")
-			if align_n==nil then
-				_,_,align_dumb=line.text:find("\\a([%d%.%-]*)")
-				if align_dumb==nil then
-					--If the line has no alignment tags
-					posx=line.x
-					posy=line.y
-				else
-					--If the line has the \a alignment tag
-					vid_x,vid_y=aegisub.video_size()
-					align_dumb=tonumber(align_dumb)
-					if align_dumb>8 then
-						posy=vid_y/2
-					elseif align_dumb>4 then
-						posy=line.eff_margin_t
-					else
-						posy=vid_y-line.eff_margin_b
-					end
-					_temp=align_dumb%4
-					if _temp==1 then
-						posx=line.eff_margin_l
-					elseif _temp==2 then
-						posx=line.eff_margin_l+(vid_x-line.eff_margin_l-line.eff_margin_r)/2
-					else
-						posx=vid_x-line.eff_margin_r
-					end
-				end
-			else
-				--If the line has the \an alignment tag
-				vid_x,vid_y=aegisub.video_size()
-				align_n=tonumber(align_n)
-				_temp=align_n%3
-				if align_n>6 then
-					posy=line.eff_margin_t
-				elseif align_n>3 then
-					posy=vid_y/2
-				else
-					posy=vid_y-line.eff_margin_b
-				end
-				if _temp==1 then
-					posx=line.eff_margin_l
-				elseif _temp==2 then
-					posx=line.eff_margin_l+(vid_x-line.eff_margin_l-line.eff_margin_r)/2
-				else
-					posx=vid-x-line.eff_margin_r
-				end
-			end
-		end
-	end
-	return tonumber(posx),tonumber(posy)
-end
-
---Returns the origin of a line
-local function get_org(line)
-	local _,_,orgx,orgy=line.text:find("\\org%(([%d%.%-]*),([%d%.%-]*)%)")
-	if orgx==nil then
-		return get_pos(line)
-	end
-	return tonumber(orgx),tonumber(orgy)
-end
 
 --Distance between two points
 local function distance(x1,y1,x2,y2)
@@ -161,10 +66,7 @@ end
 
 --Main processing function
 function circle_text(sub,sel)
-
-	--Read in styles and meta
-	local meta,styles = karaskel.collect_head(sub, false)
-
+	libLyger:set_sub(sub, sel)
 	for si,li in ipairs(sel) do
 
 		--Progress report
@@ -172,14 +74,11 @@ function circle_text(sub,sel)
 		aegisub.progress.set(100*si/#sel)
 
 		--Read in the line
-		line=sub[li]
-
-		--Preprocess
-		karaskel.preproc_line(sub,meta,styles,line)
+		line = libLyger.lines[li]
 
 		--Get position and origin
-		px,py=get_pos(line)
-		ox,oy=get_org(line)
+		px, py = libLyger:get_pos(line)
+		ox, oy = libLyger:get_org(line)
 
 		--Make sure pos and org are not the same
 		if px==ox and py==oy then
@@ -192,7 +91,7 @@ function circle_text(sub,sel)
 
 		--Remove \pos and \move
 		--If your line was non-static, too bad
-		line.text=line_exclude(line.text,{"pos","move"})
+		line.text = LibLyger.line_exclude(line.text,{"pos","move"})
 
 		--Make sure line starts with a tag block
 		if line.text:find("^{")==nil then
