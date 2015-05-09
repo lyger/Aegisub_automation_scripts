@@ -138,7 +138,7 @@ class LibLyger
         if remove_t
             new_text = new_text:gsub "\\t%b()", ""
 
-        return new_text
+        return new_text\gsub "{}", ""
 
     -- Remove all tags except the given ones
     line_exclude_except: (text, exclude) ->
