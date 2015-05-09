@@ -249,7 +249,7 @@ class LibLyger
                 for j = #target, i+1, -1
                     target[j+1] = target[j]
 
-                target[i+1] = tag: "{}", text: target[i].text\match "#{text}(.*)"
+                target[i+1] = tag: "{}", text: target[i].text\match "#{LibLyger.esc(text)}(.*)"
                 target[i] = tag: target[i].tag, :text
 
             if #text1 > #text2
