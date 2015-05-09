@@ -109,7 +109,7 @@ class LibLyger
     ]]
 
     -- Remove listed tags from the given text
-    line_exclude: (text, exclude) =>
+    line_exclude: (text, exclude) ->
         remove_t = false
         new_text = text\gsub "\\([^\\{}]*)", (a) ->
             if a\match "^r"
@@ -138,7 +138,7 @@ class LibLyger
         return new_text
 
     -- Remove all tags except the given ones
-    line_exclude_except: (text, exclude) =>
+    line_exclude_except: (text, exclude) ->
         remove_t = true
         new_text=text\gsub "\\([^\\{}]*)", (a) ->
             if a\match "^r"

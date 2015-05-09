@@ -61,7 +61,7 @@ local function make_state_table(line_table,tag_table)
 	local this_state_table={}
 	for i,val in ipairs(line_table) do
 		temp_line_table={}
-		pstate = libLyger:line_exclude_except(val.tag,tag_table)
+		pstate = libLyger.line_exclude_except(val.tag,tag_table)
 		for j,ctag in ipairs(tag_table) do
 			--param MUST start in a non-alpha character, because ctag will never be \r or \fn
 			--If it is, you fucked up

@@ -217,9 +217,9 @@ prepare_line = (i) ->
     return line, line_table, posx, posy, orgx, orgy
 
 interpolate_point = (tag, text, sposx, eposx, sposy, eposy, factor) ->
-    text = libLyger\line_exclude text, {tag}
-    posx = libLyger.float2str util.interpolate factor, sposx, eposx
-    posy = libLyger.float2str util.interpolate factor, sposy, eposy
+    text = LibLyger.line_exclude text, {tag}
+    posx = LibLyger.float2str util.interpolate factor, sposx, eposx
+    posy = LibLyger.float2str util.interpolate factor, sposy, eposy
     return text\gsub "^{", "{\\#{tag}(#{posx},#{posy})"
 
 -- The main body of code that runs the frame transform
@@ -305,7 +305,7 @@ gradient_everything = (sub, sel, res) ->
         last_line, end_table, eposx, eposy, eorgx, eorgy = prepare_line i
 
         -- Make sure both lines have the same splits
-        libLyger.match_splits start_table, end_table
+        LibLyger.match_splits start_table, end_table
 
         -- Tables that store tables for each tag block, consisting of the state of all relevant tags
         -- that are in the transform_tags table
@@ -336,7 +336,7 @@ gradient_everything = (sub, sel, res) ->
                 start_state_table[k][ekey] or= current_start_state[ekey] or start_style[ekey]
 
         -- Create a line table based on first_line, but without relevant tags
-        stripped = libLyger\line_exclude first_line.text, table.join transform_tags, {"clip"}
+        stripped = LibLyger.line_exclude first_line.text, table.join transform_tags, {"clip"}
         this_table = [{:tag, :text} for tag, text in stripped\gmatch "({[^{}]*})([^{}]*)"]
 
         -- Inner control loop

@@ -61,7 +61,7 @@ local function make_full_state_table(line_table)
     local this_state_table={}
     for i,val in ipairs(line_table) do
         this_state_table[i]={}
-        local pstate = libLyger:line_exclude(val.tag,global_excludes)
+        local pstate = libLyger.line_exclude(val.tag,global_excludes)
         --\fn has special behavior, so check if it's there and if so, remove it
         --so the rest of the code doesn't have to deal with it
         pstate=pstate:gsub("\\fn([^\\{}]*)", function(a)
