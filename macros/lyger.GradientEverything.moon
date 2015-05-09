@@ -170,19 +170,6 @@ create_preset = (settings, name) ->
     save_preset preset, settings
     return name
 
--- Remove listed tags from any \t functions in the text
-time_exclude = (text, exclude) ->
-    text = text\gsub "(\\t%b())", (a) ->
-        b = a
-        for tag in *exclude
-            if a\match "\\#{tag}"
-                b = b\gsub(tag == "clip" and "\\#{tag}%b()" or "\\#{tag}[^\\%)]*", "")
-        return b
-
-    -- get rid of empty blocks
-    return text\gsub "\\t%([%-%.%d,]*%)", ""
-
-
 prepare_line = (i) ->
     line = libLyger.lines[libLyger.sel[i]]
     line.comment = true

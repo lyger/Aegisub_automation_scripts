@@ -261,6 +261,18 @@ class LibLyger
 
         return line_table1, line_table2
 
+    -- Remove listed tags from any \t functions in the text
+    time_exclude: (text, exclude) ->
+        text = text\gsub "(\\t%b())", (a) ->
+            b = a
+            for tag in *exclude
+                if a\match "\\#{tag}"
+                    b = b\gsub(tag == "clip" and "\\#{tag}%b()" or "\\#{tag}[^\\%)]*", "")
+            return b
+
+        -- get rid of empty blocks
+        return text\gsub "\\t%([%-%.%d,]*%)", ""
+
     -- Returns a state table, restricted by the tags given in "tag_table"
     -- WILL NOT WORK FOR \fn AND \r
     make_state_table: (line_table, tag_table) ->
