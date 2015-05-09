@@ -342,7 +342,7 @@ gradient_everything = (sub, sel, res) ->
             text = interpolate_point "pos", text, sposx, eposx, sposy, eposy, factor
 
             -- Handle org transform
-            if preset.c.do_org then
+            if preset.c.tags.org then
                 text = interpolate_point "org", text, sorgx, eorgx, sorgy, eorgy, factor
 
             -- Oh yeah, and add the clip tag
