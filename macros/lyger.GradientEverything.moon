@@ -381,12 +381,8 @@ ge_gui = (sub, sel, _, preset_name = config.c.startupPreset) ->
                     preset\delete!
             ge_gui sub, sel, nil, preset_name
 
-ge_preset = (sub, sel, preset = "[Last Settings]") ->
-    config\load!
-    gradient_everything sub, sel, config.c.presets[preset]
-
 -- register macros
 rec\registerMacro ge_gui, validate_ge, nil, true
 for name, preset in pairs config.c.presets
-    f = (sub, sel) -> ge_preset sub, sel, name
+    f = (sub, sel) -> gradient_everything sub, sel, config\getSectionHandler {"presets", name}
     rec\registerMacro "Presets/#{name}", preset.description, f, validate_ge, nil, true
