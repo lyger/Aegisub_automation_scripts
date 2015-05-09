@@ -261,6 +261,21 @@ class LibLyger
 
         return line_table1, line_table2
 
+    -- Returns a state table, restricted by the tags given in "tag_table"
+    -- WILL NOT WORK FOR \fn AND \r
+    make_state_table: (line_table, tag_table) ->
+        this_state_table = {}
+        for i, val in ipairs line_table
+            temp_line_table = {}
+            pstate = LibLyger.line_exclude_except val.tag, tag_table
+            for j, ctag in ipairs tag_table
+                -- param MUST start in a non-alpha character, because ctag will never be \r or \fn
+                -- If it is, you fucked up
+                param = pstate\match "\\#{ctag}(%A[^\\{}]*)"
+                temp_line_table[ctag] = param if param
+
+            this_state_table[i] = temp_line_table
+        return this_state_table
     interpolate: (this_table, start_state_table, end_state_table, factor, preset) ->
         this_current_state = {}
 

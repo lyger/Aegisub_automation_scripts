@@ -182,21 +182,6 @@ time_exclude = (text, exclude) ->
     -- get rid of empty blocks
     return text\gsub "\\t%([%-%.%d,]*%)", ""
 
--- Returns a state table, restricted by the tags given in "tag_table"
--- WILL NOT WORK FOR \fn AND \r
-make_state_table = (line_table, tag_table) ->
-    this_state_table = {}
-    for i, val in ipairs line_table
-        temp_line_table = {}
-        pstate = libLyger\line_exclude_except val.tag, tag_table
-        for j, ctag in ipairs tag_table
-            -- param MUST start in a non-alpha character, because ctag will never be \r or \fn
-            -- If it is, you fucked up
-            param = pstate\match "\\#{ctag}(%A[^\\{}]*)"
-            temp_line_table[ctag] = param if param
-
-        this_state_table[i] = temp_line_table
-    return this_state_table
 
 prepare_line = (i) ->
     line = libLyger.lines[libLyger.sel[i]]
@@ -309,8 +294,8 @@ gradient_everything = (sub, sel, res) ->
 
         -- Tables that store tables for each tag block, consisting of the state of all relevant tags
         -- that are in the transform_tags table
-        start_state_table = make_state_table start_table, transform_tags
-        end_state_table = make_state_table end_table, transform_tags
+        start_state_table = LibLyger.make_state_table start_table, transform_tags
+        end_state_table = LibLyger.make_state_table end_table, transform_tags
 
         -- Insert default values when not included for the state of each tag block,
         -- or inherit values from previous tag block
