@@ -94,6 +94,9 @@ class LibLyger
         ybord: "number"
         xshad: "number"
         yshad: "number"
+        pos: "point"
+        org: "point"
+        clip: "clip"
         }
 
     --Convert float to neatly formatted string
@@ -258,6 +261,45 @@ class LibLyger
 
         return line_table1, line_table2
 
+    interpolate: (this_table, start_state_table, end_state_table, factor, preset) ->
+        this_current_state = {}
+
+        rebuilt_text = for k, val in ipairs this_table
+            temp_tag = val.tag
+            -- Cycle through all the tag blocks and interpolate
+            for ctag, param in pairs start_state_table[k]
+                temp_tag = temp_tag\gsub "}", ->
+                    tval_start, tval_end = start_state_table[k][ctag], end_state_table[k][ctag]
+                    tag_type = LibLyger.param_type[ctag]
+                    ivalue = switch tag_type
+                        when "alpha"
+                            util.interpolate_alpha factor, tval_start, tval_end
+                        when "color"
+                            util.interpolate_color factor, tval_start, tval_end
+                        when "number", "angle"
+                            nstart, nend = tonumber(tval_start), tonumber(tval_end)
+                            if tag_type == "angle" and preset.c.flip_rot
+                                nstart %= 360
+                                nend %= 360
+                                ndelta = nend - nstart
+                                if 180 < math.abs ndelta
+                                    nstart += ndelta * 360 / math.abs ndelta
+
+                            nvalue = util.interpolate factor, nstart, nend
+                            nvalue += 360 if tag_type == "angle" and nvalue < 0
+
+                            LibLyger.float2str nvalue
+                        when "point", "clip" then nil -- not touched by this function
+                        else ""
+
+                    -- check for redundancy
+                    if this_current_state[ctag] == ivalue
+                        return "}"
+                    this_current_state[ctag] = ivalue
+                    return "\\#{ctag..ivalue}}"
+            temp_tag .. val.text
+
+        return table.concat(rebuilt_text)\gsub "{}", ""
     :version
 
 return version\register LibLyger
