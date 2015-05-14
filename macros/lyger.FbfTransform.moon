@@ -87,7 +87,7 @@ rec = DependencyControl{
     feed: "https://raw.githubusercontent.com/TypesettingTools/lyger-Aegisub-Scripts/master/DependencyControl.json",
     {
         "aegisub.util",
-        {"lyger.LibLyger", version: "1.1.0", url: "http://github.com/TypesettingTools/lyger-Aegisub-Scripts"},
+        {"lyger.LibLyger", version: "2.0.0", url: "http://github.com/TypesettingTools/lyger-Aegisub-Scripts"},
         {"l0.ASSFoundation.Common", version: "0.2.0", url: "https://github.com/TypesettingTools/ASSFoundation",
          feed: "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"}
     }

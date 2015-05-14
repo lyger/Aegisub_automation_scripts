@@ -12,7 +12,7 @@ The filename is a bit vain, perhaps, but I couldn't come up with anything else.
 DependencyControl = require("l0.DependencyControl")
 version = DependencyControl{
     name: "LibLyger",
-    version: "1.1.0",
+    version: "2.0.0",
     description: "Library of commonly used functions across all of lyger's automation scripts.",
     author: "lyger",
     url: "http://github.com/TypesettingTools/lyger-Aegisub-Scripts",

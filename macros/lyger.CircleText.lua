@@ -32,7 +32,7 @@ local DependencyControl = require("l0.DependencyControl")
 local rec = DependencyControl{
     feed = "https://raw.githubusercontent.com/TypesettingTools/lyger-Aegisub-Scripts/master/DependencyControl.json",
     {
-        {"lyger.libLyger", version = "1.1.0", url = "http://github.com/TypesettingTools/lyger-Aegisub-Scripts"},
+        {"lyger.libLyger", version = "2.0.0", url = "http://github.com/TypesettingTools/lyger-Aegisub-Scripts"},
         "aegisub.util"
     }
 }
@@ -67,7 +67,6 @@ end
 function circle_text(sub,sel)
 	libLyger:set_sub(sub, sel)
 	for si,li in ipairs(sel) do
-
 		--Progress report
 		aegisub.progress.task("Processing line "..si.."/"..#sel)
 		aegisub.progress.set(100*si/#sel)
