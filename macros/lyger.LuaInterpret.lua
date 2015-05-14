@@ -176,18 +176,29 @@ flags
 
 ]]
 
-script_name="Lua Interpreter"
-script_description="Run Lua code on the fly"
-script_version="beta 1.2.2"
+script_name = "Lua Interpreter"
+script_description = "Run Lua code on the fly."
+script_version = "1.2.2"
+script_author = "lyger"
+script_namespace = "lyger.LuaInterpret"
 
---[[REQUIRE lib-lyger.lua OF VERSION 1.0 OR HIGHER]]--
-if pcall(require,"lib-lyger") and chkver("1.1") then
+local DependencyControl = require("l0.DependencyControl")
+local rec = DependencyControl{
+    feed = "https://raw.githubusercontent.com/TypesettingTools/lyger-Aegisub-Scripts/master/DependencyControl.json",
+    {
+		{"lyger.libLyger", version = "1.1.0", url = "http://github.com/TypesettingTools/lyger-Aegisub-Scripts"},
+		"aegisub.util"
+    }
+}
 
+local LibLyger, util = rec:requireModules()
+local libLyger = LibLyger()
+local f2s, esc = LibLyger.float2str, LibLyger.esc
 
 --Set the location of the config file
 local config_pre=aegisub.decode_path("?user")
 local config_name="luaint-presets.config"
-local psep=config_pre:match("\\")~=nil and "\\" or "/"
+local psep=config_pre:match("\\") and "\\" or "/"
 
 --Old config path, to allow old data to be copied over to the proper location
 local old_config_path=config_pre..config_name
@@ -195,12 +206,10 @@ local old_config_path=config_pre..config_name
 local config_path=config_pre..psep..config_name
 
 
-textbox={}
-
-dialog_conf={}
+local textbox, dialog_conf = {}, {}
 
 --Lookup table for once-per-line tags
-opl={
+local opl= {
 	["pos"]=true,
 	["org"]=true,
 	["move"]=true,
@@ -210,13 +219,8 @@ opl={
 	["clip"]=true
 }
 
---Backwards compatibility with old versions of lua
-if not table.pack then
-	table.pack=function(...) return {...} end
-end
-
 --Remake the configuration defaults
-function make_conf()
+local function make_conf()
 	textbox={class="textbox",name="code",x=0,y=1,width=40,height=6}
 	dialog_conf=
 	{
@@ -227,12 +231,11 @@ end
 
 
 --Returns a function that adds by each number
-function add(...)
-	x=table.pack(...)
+function add(...) -- exposed to script
+	local x = table.pack(...)
 	return function(...)
-			y=table.pack(...)
-			z={}
-			for i,_ in ipairs(y) do
+		local y, z = table.pack(...), {}
+		for i=1, #y do
 				y[i]=tonumber(y[i]) or 0
 				x[i]=tonumber(x[i]) or 0
 				z[i]=y[i]+x[i]
@@ -242,12 +245,11 @@ function add(...)
 end
 
 --Returns a function that multiplies by each number
-function multiply(...)
-	x=table.pack(...)
+function multiply(...) -- exposed to script
+	local x = table.pack(...)
 	return function(...)
-			y=table.pack(...)
-			z={}
-			for i,_ in ipairs(y) do
+		local y, z = table.pack(...), {}
+		for i=1, #y do
 				y[i]=tonumber(y[i]) or 0
 				x[i]=tonumber(x[i]) or 0
 				z[i]=y[i]*x[i]
@@ -257,18 +259,18 @@ function multiply(...)
 end
 
 --Returns a function that replaces with x
-function replace(...)
-	b=table.pack(...)
-	return function() return unpack(b) end
+function replace(...) -- exposed to script
+	local args = table.pack(...)
+	return function() return unpack(args) end
 end
 
 --Returns a function that appends x
-function append(x)
+function append(x) -- exposed to script
 	return function(y) return y..x end
 end
 
 --Write presets table to file
-function table_to_file(path,wtable)
+local function table_to_file(path,wtable)
 	local wfile=io.open(path,"wb")
 	wfile:write("return\n")
 	write_table(wtable,wfile,"    ")
@@ -276,25 +278,26 @@ function table_to_file(path,wtable)
 end
 
 --Read presets table from file
-function table_from_file(path)
+local function table_from_file(path)
 	local lfile=io.open(path,"r")
-	if lfile==nil then return nil end
+	if not lfile then return end
 	local return_presets,err = loadstring(lfile:read("*all"))
-	if err then aegisub.log(err) return nil end
+	if err then
+		aegisub.log(err)
+		return
+	end
 	lfile:close()
 	return return_presets()
 end
 
 
 function lua_interpret(sub,sel)
-	
 	make_conf()
-	
-	meta,styles=karaskel.collect_head(sub,false)
+	libLyger:set_sub(sub, sel)
 	
 	--Copies old data over in the case of first run after upgrade
 	local oldpresets=table_from_file(old_config_path)
-	if oldpresets~=nil then
+	if oldpresets then
 		table_to_file(config_path,oldpresets)
 	end
 	
@@ -317,39 +320,37 @@ function lua_interpret(sub,sel)
 	end
 	
 	--Components of the dialog
-	preselector={
+	local preselector = {
 			class="dropdown",items={},
 			name="pre_sel",
 			x=0,y=7,width=20,height=1
 		}
-	prenamer={
+	local prenamer = {
 			class="edit",
 			name="new_prename",
 			x=20,y=7,width=20,height=1
 		}
 	
-	table.insert(dialog_conf,preselector)
-	table.insert(dialog_conf,prenamer)
+	dialog_conf[3], dialog_conf[4] = preselector, prenamer
 	
-	function make_name_list()
-		preselector.items={}
-		prenames=preselector.items
-		maxnew=0
+	local function make_name_list()
+		preselector.items = {}
+		local maxnew, p = 0, 1
 		for k,_ in pairs(presets) do
-			table.insert(prenames,k)
+			preselector.items[p], p = k, p+1
 			num=k:match("New preset (%d+)")
 			num=tonumber(num) or 0
-			if num>maxnew then maxnew=num end
+			maxnew = math.max(num, maxnew)
 		end
-		table.sort(prenames)
+		table.sort(preselector.items)
 		prenamer.value=string.format("New preset %d",maxnew+1)
 	end
 	
 	make_name_list()
 	
 	--Show GUI
+	local pressed, results
 	repeat
-		
 		pressed,results=aegisub.dialog.display(dialog_conf,
 			{"Run","Load","Save","Delete","Cancel"})
 		
@@ -377,31 +378,25 @@ function lua_interpret(sub,sel)
 		
 	until pressed=="Run"
 	
-	command=results["code"]
-	
-	new_sel={}
+	local command, new_sel = results["code"], {}
 	
 	--Run for all lines in selection. Hard limit of 9001 just in case
-	i=1
-	flags={}
+	i, flags = 1, {} -- exposed to script
 	while i<=#sel and #sel<=9001 do
 		local li=sel[i]
-		local line=sub[li]
+		local line, line_table = libLyger.lines[li], {}
 		
 		aegisub.progress.set(100*i/#sel)
 		
 		--Alias maxi to the size of the selection
-		maxi=#sel
-		
-		karaskel.preproc_line(sub,meta,styles,line)
-		
+		maxi = #sel -- exposed to script
 		--Break the line into a table
-		local line_table={}
-		if line.text:match("^{")==nil then
+
+		if not line.text:match("^{") then
 			line.text="{}"..line.text
 		end
 		line.text=line.text:gsub("}","}\t")
-		j=1
+		local j = 1
 		for thistag,thistext in line.text:gmatch("({[^{}]*})([^{}]*)") do
 			line_table[j]={tag=thistag:gsub("\\1c","\\c"),text=thistext:gsub("^\t","")}
 			j=j+1
@@ -409,109 +404,112 @@ function lua_interpret(sub,sel)
 		line.text=line.text:gsub("}\t","}")
 		
 		--These functions are run at the end, at most once per line
-		tasklist={}
+		local tasklist = {}
 		
 		--Function to select line
-		function _select()
-			table.insert(tasklist,function()
-					table.insert(new_sel,li)
-					selected=true
-				end)
+		local function _select()
+			tasklist[#tasklist+1] = function()
+				new_sel[#new_sel+1] = li
+				selected = true  -- exposed to script
+			end
 		end
 		
-		--Function to duplicate line
-		function _duplicate()
+		--Function to duplicate lines
+		local function _duplicate()
 			table.insert(tasklist,1,function()
 					table.insert(sel,i+1,li+1)
-					sub.insert(li+1,table.copy(line))
-					for _x=i+2,#sel do
-						sel[_x]=sel[_x]+1
+				libLyger:insert_line(util.copy(line), li+1)
+				for x = i+2, #sel do
+					sel[x] = sel[x]+1
 					end
-					if #new_sel>0 then
-						for _x,_ in ipairs(new_sel) do
-							if new_sel[_x]>li+1 then
-								new_sel[_x]=new_sel[_x]+1
+
+				for x = 1, #new_sel do
+					if new_sel[x] > li+1 then
+						new_sel[x] = new_sel[x] + 1
 							end
 						end
-					end
-					duplicated=true
+
+				duplicated = true -- exposed to script
 					flags["duplicate"]=true
 				end)
 		end
 		
 		--Function to modify line properties
-		function _modify_line(prop,func)
-			table.insert(tasklist,function()
+		local function _modify_line(prop,func)
+			table.insert(tasklist, function()
 					line[prop]=func(line[prop])
 				end)
 		end
 		
 		--Create state table
-		state_table={}
+		local state_table = {}
 		for j,a in ipairs(line_table) do
 			state_table[j]={}
 			for b in a.tag:gmatch("(\\[^\\}]*)") do
-				if b:match("\\fs%d")~=nil then
+				if b:match("\\fs%d") then
 					state_table[j]["fs"]=b:match("\\fs([%d%.]+)")
 					state_table[j]["fs"]=tonumber(state_table[j]["fs"])
-				elseif b:match("\\fn")~=nil then
+				elseif b:match("\\fn") then
 					state_table[j]["fn"]=b:match("\\fn([^\\}]*)")
-				elseif b:match("\\r")~=nil then
+				elseif b:match("\\r") then
 					state_table[j]["r"]=b:match("\\r([^\\}]*)")
 				else
-					_tag,_param=b:match("\\([1-4]?%a+)(%A[^\\}]*)")
-					state_table[j][_tag]=tonumber(_param) or _param
+					local tag, param = b:match("\\([1-4]?%a+)(%A[^\\}]*)")
+					state_table[j][tag] = tonumber(param) or param
 				end
 			end
 		end
 		
 		--Create default state and current state
-		state=style_lookup(line)
-		dstate=table.copy(state)
+		state = libLyger:style_lookup(line) -- exposed to script
+	 	dstate = util.copy(state) -- exposed to script
 			
 		--Define position and origin objects
-		pos={}
-		org={}
-		pos.x,pos.y=get_pos(line)
-		org.x,org.y=get_org(line)
+		pos, org = {}, {} -- exposed to script
+		pos.x,pos.y=libLyger:get_pos(line)
+		org.x,org.y=libLyger:get_org(line)
 		
 		--Now cycle through all tag-text pairs
 		for j,a in ipairs(line_table) do
-			fenv=getfenv(1)
+			local fenv = getfenv(1)
 			fenv.j=j
 			fenv.line=line
 			fenv.flags=flags
 			fenv.maxj=#line_table
 			
 			--Wrappers for the once-per-line functions
-			fenv.duplicate = function() if j==1 then _duplicate() end end
-			fenv.select = function() if j==1 then _select() end end
-			fenv.modify_line = function(prop,func) if j==1 then _modify_line(prop,func) end end
+			fenv.duplicate = function()
+				if j==1 then _duplicate() end
+			end
+			fenv.select = function()
+				if j==1 then _select() end
+			end
+			fenv.modify_line = function(prop,func)
+				if j==1 then _modify_line(prop,func) end
+			end
 			
-			local first=false
-			if j==1 then first=true end
+			local first = j==1
 			
 			--Define variables
-			text=a.text
-			tag=a.tag
+			text, tag = a.text, a.tag -- exposed to script
 			
 			--Update state
-			for _tag,_param in pairs(state_table[j]) do
-				state[_tag]=_param
-				dstate[_tag]=_param
+			for tag, param in pairs(state_table[j]) do
+				state[tag]= param
+				dstate[tag]= param
 			end
 			
 			--Get the parameter of the given tag
 			fenv.get = function(b)
-				_param=tostring(dstate[b])
-				if _param:match("%b()")~=nil then
-					c={}
-					for d in _param:gmatch("[^%(%),]+") do
-						table.insert(c,d)
+				local param = tostring(dstate[b])
+				if param:match("%b()") then
+					local c = {}
+					for d in param:gmatch("[^%(%),]+") do
+						c[#c+1] = d
 					end
 					return unpack(c)
 				end
-				return _param
+				return param
 			end
 			
 			--Modify the given tag
@@ -519,42 +517,39 @@ function lua_interpret(sub,sel)
 				--Make sure once-per-lines are only modified once
 				if opl[b] and j~=1 then return end
 				
-				c={get(b)}
+				local c, d = {get(b)}
 				if #c==1 then c=c[1] end
-				d=""
 				if type(c)=="table" then
-					e={func(unpack(c))}
+					local e, h, f = {func(unpack(c))}, {"("}, ""
 					--If modifying pos or org, store values in relevant objects
 					if b=="pos" then pos.x,pos.y=unpack(e) end
 					if b=="org" then org.x,org.y=unpack(e) end
-					d="("
-					h="("
-					f=""
-					for _i,g in ipairs(e) do
-						d=d..f..g
-						h=h..f..c[_i]
-						f=","
+					d = {"("}
+					for i, g in ipairs(e) do
+						d[2*i], d[2*i+1] = f, g
+						h[2*i], h[2*i+1] = f, c[i]
+						f = ","
 					end
-					d=d..")"
-					c=h..")"
+					d[#d+1], h[#h+1] = ")", ")"
+					c, d = table.concat(h), table.concat(d)
 				else
 					d=func(c)
-					if tonumber(d)~=nil then
-						d=float2str(tonumber(d))
+					if tonumber(d) then
+						d = f2s(tonumber(d))
 					end
 				end
 				--Prevent redundancy
 				if state[b]~=d then
-					tag,_num=tag:gsub("\\"..b..esc(c),"\\"..b..esc(d))
-					if _num<1 and not opl[b] then insert("\\"..b..esc(d)) end
+					local mod_tag, num = "\\"..b..esc(d)
+					tag, num = tag:gsub("\\"..b..esc(c), mod_tag)
+					if num<1 and not opl[b] then insert(mod_tag) end
 					state[b]=d
 				end
 			end
 			
 			--Remove the given tags
 			fenv.remove = function(...)
-				b=table.pack(...)
-				tag=line_exclude(tag,b)
+				tag = LibLyger.line_exclude(tag, table.pack(...))
 			end
 			
 			--Insert the given tag at the end
@@ -576,13 +571,14 @@ function lua_interpret(sub,sel)
 			fenv.rem=fenv.remove
 			
 			--Run the user's code
-			_com,err=loadstring(command)
+			local com, err = loadstring(command)
 			
-			if err then aegisub.log(err) aegisub.cancel() end
+			if err then
+				aegisub.log(err)
+				aegisub.cancel()
+			end
 			
-			_com=setfenv(_com,fenv)
-			
-			_com()
+			setfenv(com, fenv)()
 			
 			a.text=text
 			a.tag=tag
@@ -593,26 +589,29 @@ function lua_interpret(sub,sel)
 		end
 		
 		--Rebuild
-		rebuilt_text=""
-		for _,a in ipairs(line_table) do
-			rebuilt_text=rebuilt_text..a.tag..a.text
+		local rebuilt_text = {}
+		for r, a in ipairs(line_table) do
+			rebuilt_text[r*2-1], rebuilt_text[r*2] = a.tag, a.text
 		end
-		line.text=rebuilt_text:gsub("{}","")
+		line.text = table.concat(rebuilt_text):gsub("{}","")
 		
 		--Update position and org
-		_px,_py=get_pos(line)
-		if _px~=pos.x or _py~=pos.y then
-			ptag=string.format("\\pos(%s,%s)",float2str(pos.x),float2str(pos.y))
-			line.text,_num=line.text:gsub("\\pos%b()",esc(ptag))
-			if _num<1 then line.text=line.text:gsub("{","{"..esc(ptag),1) end
+		local px, py = libLyger:get_pos(line)
+		if px ~= pos.x or py ~= pos.y then
+			local ptag = string.format("\\pos(%s,%s)", f2s(pos.x), f2s(pos.y))
+			local num
+			line.text, num = line.text:gsub("\\pos%b()", esc(ptag))
+			if num < 1 then
+				line.text = line.text:gsub("{", "{"..esc(ptag), 1)
+			end
 		end
-		_ox,_oy=get_org(line)
-		if _ox~=org.x or _oy~=org.y then
-			otag=string.format("\\org(%s,%s)",float2str(org.x),float2str(org.y))
-			line.text,_num=line.text:gsub("\\org%b()",esc(otag))
-			if _num<1 then 
-				if _ox~=pos.x or _oy~=pos.y then
-					line.text=line.text:gsub("{","{"..esc(otag),1) end end
+		local ox, oy = libLyger:get_org(line)
+		if ox ~= org.x or oy ~= org.y then
+			local otag = string.format("\\org(%s,%s)", f2s(org.x), f2s(org.y))
+			local num
+			line.text, num = line.text:gsub("\\org%b()", esc(otag))
+			if num < 1 and (ox ~= pos.x or oy ~= pos.y) then
+				line.text = line.text:gsub("{", "{"..esc(otag), 1) end
 		end
 		
 		--Reinsert
@@ -630,22 +629,4 @@ function lua_interpret(sub,sel)
 	
 end
 
-
-aegisub.register_macro(script_name,script_description,lua_interpret)
-
-
---[[HANDLING FOR lib-lyger.lua NOT FOUND CASE]]--
-else
-require "clipboard"
-function lib_err()
-	aegisub.dialog.display({{class="label",
-		label="lib-lyger.lua is missing or out-of-date.\n"..
-		"Please go to:\n\n"..
-		"https://github.com/lyger/Aegisub_automation_scripts\n\n"..
-		"and download the latest version of lib-lyger.lua.\n"..
-		"(The URL will be copied to your clipboard once you click OK)",
-		x=0,y=0,width=1,height=1}})
-	clipboard.set("https://github.com/lyger/Aegisub_automation_scripts")
-end
-aegisub.register_macro(script_name,script_description,lib_err)
-end
+rec:registerMacro(lua_interpret)
