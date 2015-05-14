@@ -49,6 +49,10 @@ class LibLyger
         @meta, @styles = karaskel.collect_head @sub, generate_furigana
         @preproc_lines @sel
 
+    insert_line: (line, i = #@lines + 1) =>
+        table.insert(@lines, i, line)
+        @sub.insert(i, line)
+
     preproc_lines: (lines) =>
         val_type = type lines
         -- indexes into the subtitles object
