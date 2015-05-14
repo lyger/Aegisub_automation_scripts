@@ -40,17 +40,18 @@ end
 --This modified version adds pointer fields to make the table into a circular linked list
 --It also ignores the exponential factor because who uses that anyway
 function make_linked_vector_table(vstring)
-	local vtable={}
+	local vtable, v = {}, 0
 	for vtype,vcoords in vstring:gmatch("([mlb])([%d%s%-]+)") do
 		for vx,vy in vcoords:gmatch("([%d%-]+)%s+([%d%-]+)") do
-			table.insert(vtable,{["class"]=vtype,["x"]=tonumber(vx),["y"]=tonumber(vy)})
+			v = v + 1
+			vtable[v] = {class = vtype, x = tonumber(vx), y = tonumber(vy)}
 		end
 	end
 
-	for i=1,#vtable-1 do
+	for i=1, v-1 do
 		vtable[i].next=vtable[i+1]
 	end
-	vtable[#vtable].next=vtable[1]
+	vtable[v].next=vtable[1]
 
 	return vtable
 end
@@ -60,25 +61,22 @@ function reverse_vector_table(vtable)
 	local nvtable={}
 	if #vtable<1 then return nvtable end
 	--Make sure vtable does not end in an m. I don't know why this would happen but still
-	maxi=#vtable
+	local maxi = #vtable
 	while vtable[maxi].class=="m" do
 		maxi=maxi-1
 	end
 
 	--All vector shapes start with m
-	nstart=util.copy(vtable[maxi])
-	tclass=nstart.class
-	nstart.class="m"
-	table.insert(nvtable,nstart)
+	nvtable[1] = util.copy(vtable[maxi])
+	local tclass = nvtable[1].class
+	nvtable[1].class = "m"
 
 	--Reinsert coords in backwards order, but shift the class over by 1
 	--because that's how vector shapes behave in aegi
 	for i=maxi-1,1,-1 do
-		tcoord=util.copy(vtable[i])
-		_temp=tcoord.class
-		tcoord.class=tclass
-		tclass=_temp
-		table.insert(nvtable,tcoord)
+		local tcoord = util.copy(vtable[i])
+		tcoord.class, tclass = tclass, tcoord.tclass
+		nvtable[#nvtable+1] = tcoord
 	end
 
 	return nvtable
@@ -86,19 +84,18 @@ end
 
 --Turns vector table into string
 function vtable_to_string(vt)
-	cclass=nil
-	result=""
+	local result, cclass = {}
 
 	for i=1,#vt,1 do
 		if vt[i].class~=cclass then
-			result=result..string.format("%s %d %d ",vt[i].class,vt[i].x,vt[i].y)
-			cclass=vt[i].class
+			result[i] = string.format("%s %d %d ",vt[i].class,vt[i].x,vt[i].y)
+			cclass = vt[i].class
 		else
-			result=result..string.format("%d %d ",vt[i].x,vt[i].y)
+			result[i] = string.format("%d %d ",vt[i].x,vt[i].y)
 		end
 	end
 
-	return result
+	return table.concat(result)
 end
 
 --Rounds to the given number of decimal places
@@ -109,12 +106,11 @@ end
 
 --Returns chirality of vector shape. +1 if counterclockwise, -1 if clockwise
 function get_chirality(vt)
-	local wvt=wrap(vt)
-	trot=0
-	for i=2,#wvt-1,1 do
-		rot1=math.atan2(wvt[i].y-wvt[i-1].y,wvt[i].x-wvt[i-1].x)
-		rot2=math.atan2(wvt[i+1].y-wvt[i].y,wvt[i+1].x-wvt[i].x)
-		drot=math.deg(rot2-rot1)%360
+	local wvt, trot = wrap(vt), 0
+	for i = 2, #wvt - 1 do
+		local rot1=math.atan2(wvt[i].y-wvt[i-1].y,wvt[i].x-wvt[i-1].x)
+		local rot2=math.atan2(wvt[i+1].y-wvt[i].y,wvt[i+1].x-wvt[i].x)
+		local drot=math.deg(rot2-rot1)%360
 		if drot>180 then drot=360-drot else drot=-1*drot end
 		trot=trot+drot
 	end
@@ -124,20 +120,19 @@ end
 --Duplicates first and last coordinates at the end and beginning of shape,
 --to allow for wraparound calculations
 function wrap(vt)
-	local wvt={}
-	table.insert(wvt,util.copy(vt[#vt]))
-	for i=1,#vt,1 do
-		table.insert(wvt,util.copy(vt[i]))
+	local wvt = {util.copy(vt[#vt])}
+	for i = 1, #vt do
+		wvt[i+1] = util.copy(vt[i])
 	end
-	table.insert(wvt,util.copy(vt[1]))
+	wvt[#vt+1] = util.copy(vt[1])
 	return wvt
 end
 
 --Cuts off the first and last coordinates, to undo the effects of "wrap"
 function unwrap(wvt)
 	local vt={}
-	for i=2,#wvt-1,1 do
-		table.insert(vt,util.copy(wvt[i]))
+	for i = 2, #wvt - 1 do
+		vt[i-1] = util.copy(wvt[i])
 	end
 	return vt
 end
@@ -173,61 +168,53 @@ function intersect(vt,tp,bm,lt,rt,vert,ch)
 	--and v is the orthagonal
 	--chmod is the chirality modifier. I'll figure out how it's used later.
 	--ub and vb are the u and v bounds. 1 is lower, 2 is higher
-	u="x"
-	v="y"
-	ub1=lt
-	ub2=rt
-	vb1=tp
-	vb2=bm
-	chmod=-1
+	local u, v = "x", "y"
+	local ub1, ub2, vb1, vb2 = lt, rt, tp, bm
+	local chmod = -1
 	if vert then
-		u="y"
-		v="x"
+		u, v = "y", "x"
 		chmod=1
-		ub1=tp
-		ub2=bm
-		vb1=lt
-		vb2=rt
+		ub1, ub2, vb1, vb2 = tp, bm, lt, rt
 	end
 
 	--Find minimum v
-	minv=10000
-	iminv=0
+	local minv, iminv = 10000, 0
 	for i,vect in ipairs(vt) do
-		if vect[v]<minv then minv=vect[v] iminv=i end
+		if vect[v]<minv then
+			minv, iminv = vect[v], i
+		end
 	end
 
 	--Start with the point of minimum v
-	start=vt[iminv]
+	local start = vt[iminv]
 
 	--String storing the new vector shape
-	nshape=""
+	local nshape, n = {}
 
 	--Prevent infinite loops
-	imaginebreaker=0
+	local imaginebreaker = 0
 
 	repeat
 		--Aborts operation if bad starting point
-		abort=false
+		local abort = false
 
 		--Current point and counter
-		curr=start
-		count=0
+		local curr, count = start, 0
 
 		--Class of the next point
-		nclass="m"
+		local nclass = "m"
 
 		--Is the current shape open?
-		open=false
+		local open = false
 		--Which side did it first cross?
-		firstcross=0
+		local firstcross = 0
 		--Which side is inside? (1 for increasing v coord, -1 for decreasing v coord)
-		inside=1
+		local inside = 1
 		--The v coordinate where it last exited
-		exitv=0
+		local exitv = 0
 
 		repeat
-			vnext=curr.next
+			local vnext = curr.next
 
 			--ZONE A
 			------------------------- ub1
@@ -236,8 +223,7 @@ function intersect(vt,tp,bm,lt,rt,vert,ch)
 			--ZONE C
 
 			--Zones of current and next points
-			czone=""
-			nzone=""
+			local czone, nzone
 
 			if curr[u]>=ub2 then czone="c"
 			elseif curr[u]<=ub1 then czone="a"
@@ -251,49 +237,49 @@ function intersect(vt,tp,bm,lt,rt,vert,ch)
 			--Staying between the lines
 			if czone=="b" and nzone=="b" then
 				if vert then
-					nshape=nshape..string.format(nclass.." %d %d ",curr[v],curr[u])
+					nshape[n+1] = string.format(nclass.." %d %d ", curr[v], curr[u])
 				else
-					nshape=nshape..string.format(nclass.." %d %d ",curr[u],curr[v])
+					nshape[n+1] = string.format(nclass.." %d %d ", curr[u], curr[v])
 				end
-
+				n = n + 1
 				--If a shape is not already open, abort
-				if not open then abort=true end
+				if not open then abort = true end
 
 			--Entering from above or below
 			elseif (czone=="a" or czone=="c") and nzone=="b" then
-				uint=ub1
-				if czone=="c" then uint=ub2 end
-				newv=round(uintercept(curr[u],curr[v],vnext[u],vnext[v],uint))
-				if vert then
-					nshape=nshape..string.format(nclass.." %d %d ",newv,uint)
-				else
-					nshape=nshape..string.format(nclass.." %d %d ",uint,newv)
-				end
+				local uint = czone == "c" and ub2 or ub1
 
-				if open then
-					--Abort if on the wrong side of the last exit v coordinate
-					if sign(newv-exitv)~=inside then abort=true end
-				--Otherwise open a new shape
+				local newv = round(uintercept(curr[u], curr[v], vnext[u], vnext[v], uint))
+				if vert then
+					nshape[n+1] = string.format(nclass.." %d %d ", newv, uint)
 				else
-					open=true
+					nshape[n+1] = string.format(nclass.." %d %d ", uint, newv)
+				end
+				n = n + 1
+
+				if open and sign(newv-exitv) ~= inside then
+					--Abort if on the wrong side of the last exit v coordinate
+					abort = true
+				--Otherwise open a new shape
+				elseif not open then
+					open = true
 					nclass="l"
 					firstcross=uint
 					inside=sign(vnext[u]-curr[u])*ch*chmod
 				end
 			--Exiting from above or below
 			elseif czone=="b" and (nzone=="a" or nzone=="c") then
-				uint=ub1
-				if nzone=="c" then uint=ub2 end
-				newv=round(uintercept(curr[u],curr[v],vnext[u],vnext[v],uint))
+				local uint = nzone == "c" and ub2 or ub1
+
+				local newv = round(uintercept(curr[u], curr[v], vnext[u], vnext[v], uint))
 				if vert then
-					nshape=nshape..
-						string.format(nclass.." %d %d l %d %d ",
-							curr[v],curr[u],newv,uint)
+					nshape[n+1] = string.format(nclass.." %d %d l %d %d ",
+							                   curr[v], curr[u], newv, uint)
 				else
-					nshape=nshape..
-						string.format(nclass.." %d %d l %d %d ",
-							curr[u],curr[v],uint,newv)
+					nshape[n+1] = string.format(nclass.." %d %d l %d %d ",
+							                    curr[u], curr[v], uint, newv)
 				end
+				n = n + 1
 
 				if open then
 					--Recrossing the line initially crossed closes a shape
@@ -311,24 +297,21 @@ function intersect(vt,tp,bm,lt,rt,vert,ch)
 				end
 			--Crossing both lines from below or above
 			elseif (czone=="c" and nzone=="a") or (czone=="a" and nzone=="c") then
-				uint1=ub1
-				uint2=ub2
-				if czone=="c" then
-					uint1=ub2
-					uint2=ub1
+				local uint1, uint2 = ub1, ub2
+				if czone == "c" then
+					uint1, uint2 = ub2, ub1
 				end
 
-				newv1=round(uintercept(curr[u],curr[v],vnext[u],vnext[v],uint1))
-				newv2=round(uintercept(curr[u],curr[v],vnext[u],vnext[v],uint2))
+				local newv1 = round(uintercept(curr[u], curr[v], vnext[u], vnext[v], uint1))
+				local newv2 = round(uintercept(curr[u], curr[v], vnext[u], vnext[v], uint2))
 				if vert then
-					nshape=nshape..
-						string.format(nclass.." %d %d l %d %d ",
-							newv1,uint1,newv2,uint2)
+					nshape[n+1] = string.format(nclass.." %d %d l %d %d ",
+							                    newv1, uint1, newv2, uint2)
 				else
-					nshape=nshape..
-						string.format(nclass.." %d %d l %d %d ",
-							uint1,newv1,uint2,newv2)
+					nshape[n+1] = string.format(nclass.." %d %d l %d %d ",
+							                    uint1, newv1, uint2, newv2)
 				end
+				n = n +1
 
 				--If it's already open, this should close the shape
 				if open then
@@ -351,14 +334,14 @@ function intersect(vt,tp,bm,lt,rt,vert,ch)
 		until count>=#vt or abort
 
 		if abort then
-			nshape=""
+			nshape = {}
 			start=start.next
 		end
 
 		imaginebreaker=imaginebreaker+1
 	until not abort or imaginebreaker>#vt
 
-	return nshape
+	return table.concat(nshape)
 end
 
 --Main execution function
@@ -392,15 +375,14 @@ function clip_clip(sub,sel)
 	}
 
 	--Show dialog
-	pressed,results=aegisub.dialog.display(config,{"Go","Cancel"})
+	local pressed, results = aegisub.dialog.display(config,{"Go","Cancel"})
 	if pressed=="Cancel" then aegisub.cancel() end
 
 	--String of the vector shape
-	sshape=results["shape"]
+	local sshape = results.shape
 
 	--Boolean that is true if the gradient is vertical, false if it's horizontal
-	vertical=true
-	if results["gtype"]=="horizontal" then vertical=false end
+	local vertical= results.gtype ~= "horizontal"
 
 	--Enforce limitations on vector shape
 	if sshape:match("b") then
@@ -411,7 +393,7 @@ function clip_clip(sub,sel)
 		aegisub.cancel()
 	end
 
-	_,mcount=sshape:gsub("m","m")
+	local _, mcount = sshape:gsub("m","m")
 	if mcount>1 then
 		aegisub.dialog.display(
 			{{class="label",x=0,y=0,width=1,height=1,
@@ -421,7 +403,7 @@ function clip_clip(sub,sel)
 	end
 
 	--Vector table object for this shape
-	svt=make_linked_vector_table(sshape)
+	local svt = make_linked_vector_table(sshape)
 
 	if #svt<3 then
 		aegisub.dialog.display(
@@ -433,10 +415,10 @@ function clip_clip(sub,sel)
 	end
 
 	--Chirality
-	chir=get_chirality(svt)
+	local chir = get_chirality(svt)
 
 	--Table of lines to delete
-	to_delete={}
+	local to_delete = {}
 
 	--Process selected lines
 	for si,li in ipairs(sel) do
@@ -446,13 +428,13 @@ function clip_clip(sub,sel)
 		aegisub.progress.set(100*si/#sel)
 
 		--Read in the line
-		line=sub[li]
+		local line = sub[li]
 
 		--Find the clipping shape
-		ctype,tvector=line.text:match("\\(i?clip)%(([^%(%)]+)%)")
+		local ctype, tvector = line.text:match("\\(i?clip)%(([^%(%)]+)%)")
 
 		--Error
-		if ctype==nil then
+		if not ctype then
 			aegisub.dialog.display(
 				{{class="label",x=0,y=0,width=1,height=1,
 					label="Where is your \\clip, foo'?"}},
@@ -461,15 +443,15 @@ function clip_clip(sub,sel)
 		end
 
 		--Get the coords
-		_left,_bottom,_right,_top=tvector:match("([%d%-]+),([%d%-]+),([%d%-]+),([%d%-]+)")
+		local left, bottom, right, top = tvector:match("([%d%-]+),([%d%-]+),([%d%-]+),([%d%-]+)")
 
-		_left=tonumber(_left)
-		_bottom=tonumber(_bottom)
-		_right=tonumber(_right)
-		_top=tonumber(_top)
+		left = tonumber(left)
+		bottom = tonumber(nottom)
+		right = tonumber(right)
+		top = tonumber(top)
 
 		--Error
-		if _right==nil then
+		if not right then
 			aegisub.dialog.display(
 				{{class="label",x=0,y=0,width=1,height=1,
 					label="Rectangular clipped gradients only."}},
@@ -478,26 +460,22 @@ function clip_clip(sub,sel)
 		end
 
 		--Make sure coords are correct
-		if _top>_bottom then
-			_temp=_top
-			_top=_bottom
-			_bottom=_temp
+		if top > bottom then
+			top, bottom = bottom, top
 		end
 
-		if _left>_right then
-			_temp=_left
-			_left=_right
-			_right=_temp
+		if left > right then
+			left, right = right, left
 		end
 
 		--Calculate the new clip
-		newclip=intersect(svt,_top,_bottom,_left,_right,vertical,chir)
+		local newclip = intersect(svt, top, bottom, left, right, vertical, chir)
 
 		--Substitute
-		line.text=line.text:gsub(ctype.."%(([^%(%)]+)%)",ctype.."("..newclip..")")
+		line.text = line.text:gsub(ctype.."%(([^%(%)]+)%)", ctype.."("..newclip..")")
 
-		if newclip=="" then
-			table.insert(to_delete,li)
+		if newclip == "" then
+			to_delete[#to_delete] = li
 		end
 
 		--Put the line back
@@ -506,7 +484,7 @@ function clip_clip(sub,sel)
 	end
 
 	--Cleanup
-	sub.delete(unpack(to_delete))
+	sub.delete(to_delete)
 
 	aegisub.set_undo_point(script_name)
 end
