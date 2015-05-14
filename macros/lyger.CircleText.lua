@@ -29,7 +29,6 @@ script_author = "lyger"
 script_namespace = "lyger.CircleText"
 
 local DependencyControl = require("l0.DependencyControl")
-local DependencyControl = require("l0.DependencyControl")
 local rec = DependencyControl{
     feed = "https://raw.githubusercontent.com/TypesettingTools/lyger-Aegisub-Scripts/master/DependencyControl.json",
     {
