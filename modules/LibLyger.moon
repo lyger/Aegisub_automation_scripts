@@ -331,6 +331,34 @@ class LibLyger
             temp_tag .. val.text
 
         return table.concat(rebuilt_text)\gsub "{}", ""
+
+    write_table: (my_table, file, indent) ->
+        indent or= ""
+        charS, charE = "   ", "\n"
+
+        --Opening brace of the table
+        file\write "#{indent}{#{charE}"
+
+        for key,val in pairs my_table
+            file\write switch type key
+                when "number" then indent..charS
+                when "string" then table.concat {indent, charS, "[", LibLyger.exportstring(key), "]="}
+                else "#{indent}#{charS}#{key}="
+
+            switch type val
+                when "table"
+                    file\write charE
+                    write_table val, file, indent..charS
+                    file\write indent..charS
+                when "string" then file\write LibLyger.exportstring val
+                when "number" then file\write tostring val
+                when "boolean" then file\write val and "true" or "false"
+
+            file\write ","..charE
+
+        -- Closing brace of the table
+        file\write "#{indent}}#{charE}"
+
     :version
 
 return version\register LibLyger

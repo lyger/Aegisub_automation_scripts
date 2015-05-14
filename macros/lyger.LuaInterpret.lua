@@ -273,7 +273,7 @@ end
 local function table_to_file(path,wtable)
 	local wfile=io.open(path,"wb")
 	wfile:write("return\n")
-	write_table(wtable,wfile,"    ")
+	LibLyger.write_table(wtable,wfile,"    ")
 	wfile:close()
 end
 
