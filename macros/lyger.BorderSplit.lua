@@ -96,15 +96,32 @@ probably also break in other cases I haven't tested.
 
 ]]--
 
+script_name = "Duplicate and Blur"
+script_description = "Splits a bordered line into two layers, so both text and outline have blur."
+script_version = "1.1.0"
+script_author = "lyger"
+script_namespace = "lyger.BorderSplit"
+
+local DependencyControl = require("l0.DependencyControl")
+local rec = DependencyControl{
+	feed = "https://raw.githubusercontent.com/TypesettingTools/lyger-Aegisub-Scripts/master/DependencyControl.json",
+	{
+		{"lyger.LibLyger", version = "2.0.0", url = "http://github.com/TypesettingTools/lyger-Aegisub-Scripts"},
+		"aegisub.util"
+	}
+}
+local LibLyger, util = rec:requireModules()
+local libLyger = LibLyger()
+
 --[[ ==GLOBAL VARIABLES== ]]--
 
 -- This is what will be added to a line with no \be or \blur tag.
 -- Make sure you double the slash! It's an escape character.
-default_blur="\\blur0.6"
+local default_blur = "\\blur0.6"
 
 -- If a line is just labeled "bord", it will default to this mode.
 -- Can be "a" (alpha) or "s" (solid)
-default_mode="s"
+local default_mode = "s"
 
 -- If refactor is set to true, the script will save commented copies
 -- of the original lines, and each time the macro is run, it will
@@ -112,19 +129,12 @@ default_mode="s"
 -- the commented originals.
 -- If set to false, it will still keep the originals but leave
 -- finished lines untouched.
-refactor=false
+local refactor = false
 
 --[[ ==END GLOBAL VARIABLES== ]]--
 
-
-script_name = "Duplicate and Blur"
-script_description = "Splits a bordered line into two layers, so both text and outline have blur"
-
-include("karaskel.lua")
-
-
 --Convert float to neatly formatted string
-local function float2str( f ) return tostring(f):gsub("%.(%d-)0+$","%.%1"):gsub("%.$","") end
+local float2str = libLyger.float2str
 
 --[[
 Tags that can have any character after the tag declaration:
@@ -134,51 +144,6 @@ Otherwise, the first character after the tag declaration must be:
 a number, decimal point, open parentheses, minus sign, or ampersand
 ]]--
 
---Remove listed tags from the given text
-local function line_exclude(text, ...)
-	local exclude={...}
-	for y=1,#exclude,1 do
-		if(text~=nil) then
-			if(string.find(text,"\\"..exclude[y])~=nil) then
-				--\fn or \r can be followed by any string
-				if exclude[y]=="fn" or exclude[y]=="r" then
-					text=string.gsub(text,"\\"..exclude[y].."[%w%.%(%),&%s]*","")
-				elseif exclude[y]=="t" then
-					text=string.gsub(text,"\\"..exclude[y].."%b()","") --%([%w%.%(%),&%s\\]-%)
-				--other tags can be delimited by the expression [%d%.%(%-&]
-				else
-					text=string.gsub(text,"\\"..exclude[y].."[%d%.%b()%-&][^}\\%)]*","")
-				end
-			end
-		end
-	end
-	--get rid of empty blocks
-	text=string.gsub(text,"{}","")
-	return text
-end
-
---Remove listed tags from any \t functions in the text
-local function time_exclude(text,...)
-	local exclude={...}
-	text=text:gsub("(\\t%b())",
-		function(a)
-			b=a
-			for y=1,#exclude,1 do
-				if(string.find(a,"\\"..exclude[y])~=nil) then
-					if exclude[y]=="clip" then
-						b=b:gsub("\\"..exclude[y].."%b()","")
-					else
-						b=b:gsub("\\"..exclude[y].."[^\\%)]*","")
-					end
-				end
-			end
-			return b
-		end
-		)
-	--get rid of empty blocks
-	text=text:gsub("\\t%([%d,]*%)","")
-	return text
-end
 
 --Add tags to the first code block in a line
 local function give_head(text, addtags)
@@ -205,14 +170,14 @@ local function sub_colors(line, cfrom, cto)
 		elseif cfrom==3 then color=color_from_style(line.styleref.color3)
 		elseif cfrom==4 then color=color_from_style(line.styleref.color4)
 		end
-		
+
 		local dcolor=""
 		if cto==1 then dcolor=color_from_style(line.styleref.color1)
 		elseif cto==2 then dcolor=color_from_style(line.styleref.color2)
 		elseif cto==3 then dcolor=color_from_style(line.styleref.color3)
 		elseif cto==4 then dcolor=color_from_style(line.styleref.color4)
 		end
-		
+
 		if(color~=dcolor) then text=give_head(text,sto..color) end
 	end
 	if(string.find(text,sfrom)~=nil) then
@@ -237,14 +202,14 @@ local function sub_alpha(line, afrom, ato)
 		elseif afrom==3 then alpha=alpha_from_style(line.styleref.color3)
 		elseif afrom==4 then alpha=alpha_from_style(line.styleref.color4)
 		end
-		
+
 		local dalpha=""
 		if ato==1 then dalpha=alpha_from_style(line.styleref.color1)
 		elseif ato==2 then dalpha=alpha_from_style(line.styleref.color2)
 		elseif ato==3 then dalpha=alpha_from_style(line.styleref.color3)
 		elseif ato==4 then dalpha=alpha_from_style(line.styleref.color4)
 		end
-		
+
 		if(alpha~=dalpha) then text=give_head(text,sto..alpha) end
 	end
 	if(text:find(sfrom)~=nil) then
@@ -275,8 +240,8 @@ end
 function dup_blur_a(line,line1,line2)
 
 	--ignore anything in \t tags
-	local timeless_line=line_exclude(line1.text,"t")
-	
+	local timeless_line=LibLyger.line_exclude(line1.text,"t")
+
 	--read in the border and blur amounts
 	local _,_,border = string.find(timeless_line,"\\bord([%d%.]+)")
 	local _,_,blur = string.find(timeless_line,"\\b[elur]+([%d%.]+)")
@@ -291,9 +256,9 @@ function dup_blur_a(line,line1,line2)
 		border=line.styleref.outline
 		line2.text=give_head(line2.text,"\\bord"..float2str(border))
 	end
-	
+
 	--line1 is the top line set to main color, so remove 3c and 3a tags and make 3c the same as 1c
-	line1.text=line_exclude(line1.text,"bord","3c","3a","shad","xshad","yshad")
+	line1.text=LibLyger.line_exclude(line1.text,"bord","3c","3a","shad","xshad","yshad")
 	line1.text=sub_colors(line1,1,3)
 	--make 3a the same as 1a
 	line1.text=sub_alpha(line1,1,3)
@@ -310,10 +275,10 @@ function dup_blur_a(line,line1,line2)
 	line1.layer=line1.layer+1
 	--get rid of empty t blocks
 	line1.text=line1.text:gsub("\\t%([%d,]*%)","")
-	
-	
+
+
 	--line2 is the bottom line set to border color, so remove 1c and 1a tags
-	line2.text=line_exclude(line2.text,"c","1c","1a")
+	line2.text=LibLyger.line_exclude(line2.text,"c","1c","1a")
 	--if the original line contained no blur, default to default_blur
 	blur=tonumber(blur)
 	line2.text=line2.text:gsub("\\bord([%d%.]+)",
@@ -324,15 +289,15 @@ function dup_blur_a(line,line1,line2)
 	line2.text=give_head(line2.text,"\\1a&HFF&")
 	--get rid of empty t blocks
 	line2.text=line2.text:gsub("\\t%([%d,]*%)","")
-	
+
 end
 
 --"s mode" border split
 function dup_blur_s(line,line1,line2)
-	
+
 	--ignore anything in \t tags
-	local timeless_line=line_exclude(line.text,"t")
-	
+	local timeless_line=LibLyger.line_exclude(line.text,"t")
+
 	--read in the border and blur amounts
 	local _,_,border = string.find(timeless_line,"\\bord([%d%.]+)")
 	local _,_,blur = string.find(timeless_line,"\\b[elur]+([%d%.]+)")
@@ -342,10 +307,10 @@ function dup_blur_s(line,line1,line2)
 		line1.text=give_head(line1.text,"\\bord0")
 		line2.text=give_head(line2.text,"\\bord"..float2str(border))
 	end
-	
+
 	--line1 is the top line set to main color, so remove 3c and 3a tags
-	line1.text=line_exclude(line1.text,"3c","3a","shad","xshad","yshad")
-	line1.text=time_exclude(line1.text,"bord")
+	line1.text=LibLyger.line_exclude(line1.text,"3c","3a","shad","xshad","yshad")
+	line1.text=LibLyger.time_exclude(line1.text,"bord")
 	--if there is no border by default, delete the bord tag. Otherwise, set bord tag to zero
 	if line.styleref.outline==0 then
 		--if the original line contained no blur, default to default_blur
@@ -368,9 +333,9 @@ function dup_blur_s(line,line1,line2)
 	line1.layer=line1.layer+1
 	--get rid of empty t blocks
 	line1.text=line1.text:gsub("\\t%([%d,]*%)","")
-	
+
 	--line2 is the bottom line set to border color, so remove 1c and 1a tags and make 1c the same as 3c
-	line2.text=line_exclude(line2.text,"c","1c","1a")
+	line2.text=LibLyger.line_exclude(line2.text,"c","1c","1a")
 	line2.text=sub_colors(line2,3,1)
 	--if the original line contained no blur, default to default_blur
 	if blur==nil then
@@ -380,14 +345,14 @@ function dup_blur_s(line,line1,line2)
 	line2.text=sub_alpha(line2,3,1)
 	--get rid of empty t blocks
 	line2.text=line2.text:gsub("\\t%([%d,]*%)","")
-	
+
 end
 
 --handle the third line for the "d" option
 function double_border(line3,mode,opts)
 	--ignore anything in \t tags
-	local timeless_line=line_exclude(line3.text,"t")
-	
+	local timeless_line=LibLyger.line_exclude(line3.text,"t")
+
 	--read in the border and blur amounts
 	local _,_,border = string.find(timeless_line,"\\bord([%d%.]+)")
 	local _,_,blur = string.find(timeless_line,"\\b[elur]+([%d%.]+)")
@@ -406,11 +371,11 @@ function double_border(line3,mode,opts)
 		_,_,blur=default_blur:find("\\b[elur]+([%d%.]+)")
 	end
 	blur=tonumber(blur)
-	
-	line3.text=line_exclude(line3.text,"3c")
+
+	line3.text=LibLyger.line_exclude(line3.text,"3c")
 	line3.text=sub_colors(line3,1,3)
 	if mode=="a" then
-		line3.text=line_exclude(line3.text,"alpha","1a")
+		line3.text=LibLyger.line_exclude(line3.text,"alpha","1a")
 		line3.text=line3.text:gsub("\\bord([%d%.]+)",
 			function(a) return "\\bord"..float2str(tonumber(a)*2+blur) end)
 		line3.text=give_head(line3.text,"\\1a&HFF&")
@@ -424,8 +389,8 @@ end
 --shadow split
 function shad_blur(line,line1,line2)
 	--ignore anything in \t tags
-	local timeless_line=line_exclude(line.text,"t")
-	
+	local timeless_line=LibLyger.line_exclude(line.text,"t")
+
 	--read in the border, shadow, and blur amounts
 	local _,_,border = string.find(timeless_line,"\\bord([%d%.]+)")
 	local _,_,blur = string.find(timeless_line,"\\b[elur]+([%d%.]+)")
@@ -444,11 +409,11 @@ function shad_blur(line,line1,line2)
 	end
 	xshad=tonumber(xshad)
 	yshad=tonumber(yshad)
-	
+
 	--line1 is the top line with no shadow, so remove all shadow related tags
-	line1.text=line_exclude(line1.text,"4c","4a","shad","xshad","yshad")
-	--line1.text=time_exclude(line1.text,"shad","xshad","yshad")
-	
+	line1.text=LibLyger.line_exclude(line1.text,"4c","4a","shad","xshad","yshad")
+	--line1.text=LibLyger.time_exclude(line1.text,"shad","xshad","yshad")
+
 	--make color 1 and 3 the same as color 4 for line2
 	line2.text=sub_colors(line2,4,1)
 	if border>0 then line2.text=sub_colors(line2,4,3) end
@@ -456,9 +421,9 @@ function shad_blur(line,line1,line2)
 	line2.text=sub_alpha(line2,4,1)
 	if border>0 then line2.text=sub_alpha(line2,4,3) end
 	--now remove the shadow tags, as they're no longer needed
-	line2.text=line_exclude(line2.text,"4c","4a","shad","xshad","yshad")
-	--line2.text=time_exclude(line2.text,"shad","xshad","yshad")
-	
+	line2.text=LibLyger.line_exclude(line2.text,"4c","4a","shad","xshad","yshad")
+	--line2.text=LibLyger.time_exclude(line2.text,"shad","xshad","yshad")
+
 	--THE FOLLOWING IS TEMPORARY CODE JUST SO IT'LL WORK FOR WHAT I NEED TODAY
 	if line2.text:find("\\pos") == nil then
 		line2.text=give_head(line2.text,string.format("\\pos(%d,%d)",line2.x,line2.y))
@@ -469,7 +434,7 @@ function shad_blur(line,line1,line2)
 	line2.text=line2.text:gsub("\\pos%([%d%.%-]+,[%d%.%-]+%)",string.format("\\pos(%d,%d)",xshad+shadx,yshad+shady))
 	--relayer
 	line1.layer=line1.layer+1
-	
+
 	--TODO:
 	--Finish basics (color, alpha handling, positioning)
 	--Handle modification of shadow position with \t tags -> convert \t(\shad) to \move
@@ -477,126 +442,108 @@ end
 
 --Detect marked lines, and determine which mode to use
 function dup_blur(sub, sel, act)
+	libLyger:set_sub(sub)
 
-	--collect header info
-	local meta,styles = karaskel.collect_head(sub, false)
-	
 	--cycle through script
-	for x = #sub,1,-1 do
-		
-		--read in line
-		local line = sub[x]
-		
+	for _, line in ipairs(libLyger.dialogue) do
+		local x = line.i
 		--detect if it's marked
-		if line.class == "dialogue" then
-			if line.actor:match("^shad")~=nil and line.effect~="done" then
-				--_,_,sopts=line.actor:find("bord[as]?([gd]+)")
-			
-				--read in two more copies of the line
-				local line1=sub[x]
-				local line2=sub[x]
-				
-				--preprocess lines
-				karaskel.preproc_line(sub,meta,styles,line)
-				karaskel.preproc_line(sub,meta,styles,line1)
-				karaskel.preproc_line(sub,meta,styles,line2)
-				
-				--apply different manipulations depending on mode
-				--if bmode=="a" then dup_blur_a(line,line1,line2)
-				--elseif bmode=="s" then dup_blur_s(line,line1,line2)
-				--end
-				
-				--handle "g" modifier
-				--if (sopts ~= nil and sopts:find("g") ~=nil) then
-				--	line1.text=line1.text:gsub("\\b[elur]+[%d%.]+","")
-				--end
-				
-				--split off the shadow
-				shad_blur(line,line1,line2)
-				
-				--prevent it from reapplying to new lines, and comment out old line
-				line1.effect='done'
-				line1.comment=false
-				line2.effect='done'
-				line2.comment=false
-				line.comment=true
-				
-				if (not refactor) then line.actor="*"..line.actor end
-				
-				--insert lines
-				sub[x]=line
-				sub.insert(x+1,line1)
-				sub.insert(x+1,line2)
-				
-			elseif line.actor:match("^bord[as]?")~=nil and line.effect~="done" then
-			  
-				--if mode is not defined, set mode to default mode
-				_,_,bmode=line.actor:find("bord([as])")
-				if bmode == nil then bmode=default_mode end
-				_,_,bopts=line.actor:find("bord[as]?([gd]+)")
-			
-				--read in two more copies of the line
-				local line1=sub[x]
-				local line2=sub[x]
-				
-				--handle "g" modifier
-				if (bopts ~= nil and bopts:find("g") ~=nil) then
-					line1.text=line1.text:gsub("\\b[elur]+[%d%.]+","")
-				end
-				
-				--preprocess lines
-				karaskel.preproc_line(sub,meta,styles,line)
-				karaskel.preproc_line(sub,meta,styles,line1)
-				karaskel.preproc_line(sub,meta,styles,line2)
-				
-				if (bopts ~= nil and bopts:find("d") ~=nil) then
-					line3=sub[x]
-					karaskel.preproc_line(sub,meta,styles,line3)
-					double_border(line3,bmode,bopts)
-				end
-				
-				--apply different manipulations depending on mode
-				if bmode=="a" then dup_blur_a(line,line1,line2)
-				elseif bmode=="s" then dup_blur_s(line,line1,line2)
-				end
-				
-				--prevent it from reapplying to new lines, and comment out old line
-				line1.effect='done'
-				line1.comment=false
-				line2.effect='done'
-				line2.comment=false
-				line.comment=true
-				
-				if (not refactor) then line.actor="*"..line.actor end
-				
-				--make modifications if the "d" option is on
-				if (bopts ~= nil and bopts:find("d") ~=nil) then
-					line3.effect='done'
-					line3.comment=false
-					line1.layer=line1.layer+1
-					line2.layer=line2.layer+1
-					--kill shadows
-					line2.text=line_exclude(line2.text,"shad","xshad","yshad")
-					if line2.styleref.shadow~=0 then line2.text=give_head(line2.text,"\\shad0") end
-				end
-				
-				--insert lines
-				sub[x]=line
-				sub.insert(x+1,line1)
-				sub.insert(x+1,line2)
-				
-				--add new line if "d" option is on (wow this is inelegant)
-				if (bopts ~= nil and bopts:find("d") ~=nil) then
-					sub.insert(x+1,line3)
-				end
-			
-			--delete lines left over from previous applications
-			elseif line.actor:match("bord[asg]?")~=nil and line.effect=="done" and refactor then
-				sub.delete(x)
+		if line.actor:match("^shad")~=nil and line.effect~="done" then
+			--_,_,sopts=line.actor:find("bord[as]?([gd]+)")
+
+			-- create two more copies of the line
+			libLyger:preproc_lines(line)
+			local line1, line2 = util.copy(line), util.copy(line)
+
+			--apply different manipulations depending on mode
+			--if bmode=="a" then dup_blur_a(line,line1,line2)
+			--elseif bmode=="s" then dup_blur_s(line,line1,line2)
+			--end
+
+			--handle "g" modifier
+			--if (sopts ~= nil and sopts:find("g") ~=nil) then
+			--  line1.text=line1.text:gsub("\\b[elur]+[%d%.]+","")
+			--end
+
+			--split off the shadow
+			shad_blur(line,line1,line2)
+
+			--prevent it from reapplying to new lines, and comment out old line
+			line1.effect='done'
+			line1.comment=false
+			line2.effect='done'
+			line2.comment=false
+			line.comment=true
+
+			if (not refactor) then line.actor="*"..line.actor end
+
+			--insert lines
+			sub[x]=line
+			sub.insert(x+1,line1)
+			sub.insert(x+1,line2)
+
+		elseif line.actor:match("^bord[as]?")~=nil and line.effect~="done" then
+
+			--if mode is not defined, set mode to default mode
+			_,_,bmode=line.actor:find("bord([as])")
+			if bmode == nil then bmode=default_mode end
+			_,_,bopts=line.actor:find("bord[as]?([gd]+)")
+
+			-- create two more copies of the line
+			libLyger:preproc_lines(line)
+			local line1, line2, line3 = util.copy(line), util.copy(line)
+
+			--handle "g" modifier
+			if (bopts ~= nil and bopts:find("g") ~=nil) then
+				line1.text=line1.text:gsub("\\b[elur]+[%d%.]+","")
 			end
+
+			if (bopts ~= nil and bopts:find("d") ~=nil) then
+				line3 = util.copy(line)
+				double_border(line3,bmode,bopts)
+			end
+
+			--apply different manipulations depending on mode
+			if bmode=="a" then dup_blur_a(line,line1,line2)
+			elseif bmode=="s" then dup_blur_s(line,line1,line2)
+			end
+
+			--prevent it from reapplying to new lines, and comment out old line
+			line1.effect='done'
+			line1.comment=false
+			line2.effect='done'
+			line2.comment=false
+			line.comment=true
+
+			if (not refactor) then line.actor="*"..line.actor end
+
+			--make modifications if the "d" option is on
+			if (bopts ~= nil and bopts:find("d") ~=nil) then
+				line3.effect='done'
+				line3.comment=false
+				line1.layer=line1.layer+1
+				line2.layer=line2.layer+1
+				--kill shadows
+				line2.text=LibLyger.line_exclude(line2.text,"shad","xshad","yshad")
+				if line2.styleref.shadow~=0 then line2.text=give_head(line2.text,"\\shad0") end
+			end
+
+			--insert lines
+			sub[x]=line
+			sub.insert(x+1,line1)
+			sub.insert(x+1,line2)
+
+			--add new line if "d" option is on (wow this is inelegant)
+			if (bopts ~= nil and bopts:find("d") ~=nil) then
+				sub.insert(x+1,line3)
+			end
+
+		--delete lines left over from previous applications
+		elseif line.actor:match("bord[asg]?")~=nil and line.effect=="done" and refactor then
+			sub.delete(x)
 		end
 	end
 	aegisub.set_undo_point("Duplicate and blur")
 end
 
-aegisub.register_macro(script_name, script_description, dup_blur)
+rec:registerMacro(dup_blur)

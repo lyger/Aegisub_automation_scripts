@@ -4,13 +4,17 @@ This is the page where I'll be uploading and updating the various automation scr
 
 I take requests (if you can convince me you have a task that would be useful automated). Also, if you find a bug in any of these scripts, by all means tell me so I can fix it. You can find me as lyger on irc.rizon.net.
 
-== lib-lyger.lua ==
+== Required Modules ==
 
-As of 7-23-2013, I have vastly reorganized much of my code. From now on, this file will be essential for most of my advanced scripts. I noticed I was reusing a lot of code in multiple automations, and it was getting to be a pain to update the same function in every script whenever somebody found a bug. From now on, functions that I frequently use will be collected in this library, so that I only need to update one file when somebody finds a bug in one of the functions. The file contains its own version checker, and scripts that load the file will check if the library is present and up-to-date.
+=== DependencyControl ===
+My scripts require DependencyControl (https://github.com/TypesettingCartel/DependencyControl) for versioning and dependency management. Update feeds are provided, so all scripts can be installed using the DependencyControl Toolbox and will automatically update whenever new versions are released.
+
+=== LibLyger ===
+This module is required for most of my advanced scripts. I noticed I was reusing a lot of code in multiple automations, and it was getting to be a pain to update the same function in every script whenever somebody found a bug. From now on, functions that I frequently use will be collected in this library, so that I only need to update one file when somebody finds a bug in one of the functions.
 
 == Typesetting Scripts ==
 
-=== border-split.lua ===
+=== BorderSplit ===
 
 The first and probably the most useful automation script I wrote. Now that I have a lot more experience writing these automations, I realize how messy the code is, but it works and is remarkably bug-free.
 
@@ -18,7 +22,7 @@ This takes a single bordered line and splits it into two lines. For a single bor
 
 Compared to my other scripts, the behavior is a bit odd. Instead of applying to the selected lines, the script applies to lines with "bord" in the actor field. This is mostly an artifact of my days working with karaoke templates, but I honestly rather like the workflow.
 
-=== template-manager.lua ===
+=== TemplateManager ===
 
 This one gets a spot up here because of its usefulness. This automation is built around typesetting efficiency. The idea is you do all the hard work once, and everything afterwards becomes super easy.
 
@@ -26,7 +30,7 @@ This is actually a macro that creates other macros which will be added to the au
 
 Once you've finished creating and modifying your template group, reload your automations and the newly created macro will appear on the automations menu, allowing you to hotkey it. Most aspects of the script remember your last action.
 
-=== fbf-transform.lua ===
+=== FbfTransform ===
 
 The first "advanced" automation I wrote since writing border-split. This script is very powerful and versatile, but it expects a certain amount out of the typesetter. Read the instructions at the top of the script file for full details.
 
@@ -36,37 +40,37 @@ Note that as a typesetter, you will need to typeset the keyframes by hand. In es
 
 Also note that there is no requirement that the lines you select actually represent a frame-by-frame typeset that is sorted by time. This script transforms parameters across the lines you select; that's all. How you use it is up to you.
 
-=== gradient-everything.lua ===
+=== GradientEverything ===
 
-This was written based on the code of fbf-transform. Instead of creating frame-by-frame animations, gradient-everything will "gradient" the parameters. Put another way, fbf-transform will transform parameters in time, while gradient-everything can transform parameters in space.
+This was written based on the code of FbfTransform. Instead of creating frame-by-frame animations, GradientEveryting will "gradient" the parameters. Put another way, FbfTransform will transform parameters in time, while GradientEveryting can transform parameters in space.
 
-Again, you define "key" lines, but unlike fbf-transform you don't need to have all the lines in between already; the script will generate them for you. These "key" lines will be smoothly merged together by the script, based on the options you enter from the popup menu.
+Again, you define "key" lines, but unlike FbfTransform you don't need to have all the lines in between already; the script will generate them for you. These "key" lines will be smoothly merged together by the script, based on the options you enter from the popup menu.
 
-Because of the difficulty of calculating the exact size and shape of the typeset, this script requires that the user define a bounding box for the gradient using the rectangular clip tool in aegisub.
+The Bounding box for the gradient will be determined using SubInspector when the module is available on your system. If it isn't, you must provide it as a rectangular clip (on any of the input lines).
 
-==== clip-shifter.lua ====
+==== ClipShifter ====
 
-This is primarily a helper script to go with gradient-everything. If you want to apply gradient-everything to many lines without having to redraw the bounding box each time, clip-shifter will move and add the bounding box for you.
+This is primarily a helper script to go with GradientEveryting. If you want to apply GradientEveryting to many lines without having to redraw the bounding box each time, ClipShifter will move and add the bounding box for you.
 
-=== gradient-by-char.lua ===
+=== GradientByChar ===
 
-A by-character version of gradient-everything. It has the most of the features of gradient-everything, but its resolution is only by-character, and for obvious reasons vertical gradients are not possible.
+A by-character version of GradientEveryting. It has the most of the features of GradientEveryting, but its resolution is only by-character, and for obvious reasons vertical gradients are not possible.
 
-That being said, I will recommend that typesetters use this script instead of gradient-everything in the vast majority of cases, simply because gradient-everything will generate dozens of lines and result in lots of lag if you're not careful. In most cases, gradient-by-char will be sufficient. Not to mention, working with a single-line typeset is usually easier.
+That being said, I will recommend that typesetters use this script instead of GradientEveryting in the vast majority of cases, simply because GradientEveryting will generate dozens of lines and result in lots of lag if you're not careful. In most cases, gradient-by-char will be sufficient. Not to mention, working with a single-line typeset is usually easier.
 
-This automation has no popup interface (unlike gradient-everything). It's locked to transform any different parameters that it detects. It's also locked to "rotations less than 180 degrees" mode (you can read more about this in the readme at the top of the script).
+This automation has no popup interface (unlike GradientEveryting). It's locked to transform any different parameters that it detects. It's also locked to "rotations less than 180 degrees" mode (you can read more about this in the readme at the top of the script).
 
-=== lua-interpret.lua ===
+=== LuaInterpret ===
 
 It seems I never wrote a description for this, so here goes.
 
 This was one of my most ambitious projects, and despite a plethora of bugs and user-unfriendliness, today it's one of my most-used scripts. I noticed I was repeating a lot of code in my automations, and many tasks kept popping up over and over again, so I thought to myself, "Why don't I create a script that does all the grunt work for you, so you only have to code the important part?"
 
-Well, it sort of worked. In most cases nowadays, when a typesetter asks me for a specific task automated, I'm able to accomplish it in under fifty lines using lua-interpreter. If you ever come to me with a request for automation, I'll either direct you to existing scripts that can do what you want, or give you some code to use with this script.
+Well, it sort of worked. In most cases nowadays, when a typesetter asks me for a specific task automated, I'm able to accomplish it in under fifty lines using LuaInterpret. If you ever come to me with a request for automation, I'll either direct you to existing scripts that can do what you want, or give you some code to use with this script.
 
 It's also a super handy tool for adjusting massive multi-line typesets or doing arithmetic on tag parameters. Need to double the font size? mod("fs",mul(2)). Add 5 degrees to all the rotations in a line? mod("frz",add(5)). One line of code will apply to all the tags in all the selected lines.
 
-=== clip-blur.lua ===
+=== ClipBlur ===
 
 The \clip tag naturally generates a very sharp edge. For a typesetter who wants his signs to blend in, that sharp edge can stick out like a sore thumb.
 
@@ -74,19 +78,19 @@ This script serves the much-needed function of blurring the edge of a \clip by d
 
 The "precision" option can improve the appearance, but note that it scales exponentially. A precision of 4 generates 8 times as many lines as a precision of 1.
 
-=== clip-grad.lua ===
+=== ClipGrad ===
 
 This script is not as versatile as I'd have liked, due to limitations caused by the way anti-aliasing works. Nonetheless, it should be useful in plenty of situations.
 
-This works the same as clip-blur, but instead of blurring the edge of the \clip, it gradients from one color to another (unlike gradient-everything, it does not gradient any other parameters. Sorry). To correct for anti-aliasing artifacts, there is a forced one-pixel overlap for each stripe of the gradient. As a result, this script does not work on semitransparent typesets at all.
+This works the same as ClipBlur, but instead of blurring the edge of the \clip, it gradients from one color to another (unlike GradientEveryting, it does not gradient any other parameters. Sorry). To correct for anti-aliasing artifacts, there is a forced one-pixel overlap for each stripe of the gradient. As a result, this script does not work on semitransparent typesets at all.
 
 Nonetheless, it provides the ability to create a gradient of more or less any arbitrary shape.
 
-=== clip-clip.lua ===
+=== VecClipGradient ===
 
 Intersects a lines-only vector clip with a rectangular clip. Less awesome than it sounds, since I found out after writing this script that you can have two \clip tags in the same line, so long as one is vector and one is rectangular. Welp.
 
-=== image2ass_auto.lua ===
+=== Image2ASS ===
 
 This script started as a standalone Lua script that I eventually wrapped in an Aegisub macro to make it easier to use. It's probably the worst lag machine in this entire repo, though it can also be an incredibly powerful tool.
 
@@ -98,7 +102,7 @@ It's worth noting that no compression is performed on the alpha mask. It's the u
 
 The latest version supports non-bitmap images, which are converted to bitmap automatically with the convert tool from ImageMagick. Download the executable [http://www.mediafire.com/download/zdxn75nte1n6cq6/convert.exe here] and save it to your automation\autoload directory.
 
-=== modify-mocha.lua ===
+=== ModifyMocha ===
 
 I wrote this script when I had to deal with a Mocha-tracked typeset that appeared in a flashback in a later episode. Obviously, I didn't want to re-typeset the sign, and instead copy-pasted the sign from the earlier episode. Unfortunately, the colors were all grayed out in the flashback, and the sign itself was a couple layers, with borders and shadows and whatnot. Fixing all those colors would have been a find-and-replace nightmare.
 
@@ -110,26 +114,26 @@ Some effects only work if each section of a typeset is split onto a different li
 
 This will split a single line into multiple lines while preserving the appearance of the original single-line typeset. In theory, after running this, your typeset will look exactly the same as it did before, but on multiple lines. The script splits every time it sees an {override block}. You can put blank {} blocks to force a split, and it should still work.
 
-=== circle-text.lua ===
+=== CircleText ===
 
 Puts text onto a circle, on a single line. This is accomplished using \fsp and \frz trickery. The curve of the circle is defined by placing the origin. If you select the z rotation tool in Aegisub, it will display a circle that is roughly the same as the circle your text will end up on after applying this automation. Detailed instructions are at the top of the script, but it's pretty straightforward.
 
-=== layer-inc.lua ===
+=== LayerIncrement ===
 
-Makes selected lines have layers that count up or down (e.g. 1,2,3,4,5...). The minimum layer number will be the highest layer within the selection. This is a predecessor to a possible gradient-everything clone based around creating outline gradients.
+Makes selected lines have layers that count up or down (e.g. 1,2,3,4,5...). The minimum layer number will be the highest layer within the selection. This is a predecessor to a possible GradientEveryting clone based around creating outline gradients.
 
-=== move-clip.lua ===
+=== MoveClip ===
 
 Turns lines with \pos and a rectangular \clip into lines with \move and a \t transformed \clip, based on the user-input delta-x and delta-y values. This is primarily intended to allow rectangular-clipped gradients to move using \move statements.
 
 == Karaoke Scripts ==
 
-=== kara-helper.lua ===
+=== KaraHelper ===
 
 Certain karaoke effects require blank syllables at the beginning and end of the k-timed line, in order to leave room for transition-in and transition-out effects. This automation primarily takes care of making those sorts of timing adjustments automatically.
 
 If any k-timers have tasks they'd like to see added to this script, just contact me.
 
-=== kara-replace.lua ===
+=== KaraReplacer ===
 
 Ever had to k-time a song and encountered a verse with the same tune and rhythm as a previous verse, but different lyrics? This automation allows you to reuse that timing, and quickly and efficiently replace the lyrics. Highlight the lines you wish to apply this to, run the automation, and click "help" for full instructions.

@@ -18,35 +18,22 @@ create a whopping 41 lines. Use with caution.
 
 
 ]]--
+script_name = "Blur clip"
+script_description = "Blurs a vector clip."
+script_version = "1.2.0"
+script_author = "lyger"
+script_namespace = "lyger.ClipBlur"
 
-script_name="Blur clip"
-script_description="Blurs a vector clip."
-script_version="1.1"
-
---[[REQUIRE lib-lyger.lua OF VERSION 1.1 OR HIGHER]]--
-if pcall(require,"lib-lyger") and chkver("1.1") then
-
---Creates a shallow copy of the given table
-local function shallow_copy(source_table)
-	new_table={}
-	for key,value in pairs(source_table) do
-		new_table[key]=value
-	end
-	return new_table
-end
-
---Creates a deep copy of the given table, to the given depth
-local function deep_copy(source_table,depth)
-	depth=math.floor(depth) or -1
-	if depth==0 then return source_table end
-	
-	new_table={}
-	for key,value in pairs(source_table) do
-		if type(value)=="table" then value=deep_copy(value,depth-1) end
-		new_table[key]=value
-	end
-	return new_table
-end
+local DependencyControl = require("l0.DependencyControl")
+local rec = DependencyControl{
+	feed = "https://raw.githubusercontent.com/TypesettingTools/lyger-Aegisub-Scripts/master/DependencyControl.json",
+	{
+		{"lyger.LibLyger", version = "2.0.0", url = "http://github.com/TypesettingTools/lyger-Aegisub-Scripts"},
+		"aegisub.util"
+	}
+}
+local LibLyger, util = rec:requireModules()
+local libLyger = LibLyger()
 
 --Distance between two points
 local function distance(x1,y1,x2,y2)
@@ -59,8 +46,8 @@ local function sign(n)
 end
 
 --Haha I didn't know these functions existed. May as well just alias them
-todegree=math.deg
-torad=math.rad
+local todegree=math.deg
+local torad=math.rad
 
 --Parses vector shape and makes it into a table
 function make_vector_table(vstring)
@@ -84,23 +71,23 @@ function reverse_vector_table(vtable)
 	while vtable[maxi].class=="m" do
 		maxi=maxi-1
 	end
-	
+
 	--All vector shapes start with m
-	nstart=shallow_copy(vtable[maxi])
+	nstart = util.copy(vtable[maxi])
 	tclass=nstart.class
 	nstart.class="m"
 	table.insert(nvtable,nstart)
-	
+
 	--Reinsert coords in backwards order, but shift the class over by 1
 	--because that's how vector shapes behave in aegi
 	for i=maxi-1,1,-1 do
-		tcoord=shallow_copy(vtable[i])
+		tcoord = util.copy(vtable[i])
 		_temp=tcoord.class
 		tcoord.class=tclass
 		tclass=_temp
 		table.insert(nvtable,tcoord)
 	end
-	
+
 	return nvtable
 end
 
@@ -108,7 +95,7 @@ end
 function vtable_to_string(vt)
 	cclass=nil
 	result=""
-	
+
 	for i=1,#vt,1 do
 		if vt[i].class~=cclass then
 			result=result..string.format("%s %d %d ",vt[i].class,vt[i].x,vt[i].y)
@@ -117,7 +104,7 @@ function vtable_to_string(vt)
 			result=result..string.format("%d %d ",vt[i].x,vt[i].y)
 		end
 	end
-	
+
 	return result
 end
 
@@ -133,7 +120,7 @@ function grow(vt,r,sc)
 	local wvt=wrap(vt)
 	local nvt={}
 	sc=sc or 1
-	
+
 	--Grow
 	for i=2,#wvt-1,1 do
 		cpt=wvt[i]
@@ -148,28 +135,28 @@ function grow(vt,r,sc)
 		rot1=todegree(math.atan2(cpt.y-ppt.y,cpt.x-ppt.x))
 		rot2=todegree(math.atan2(npt.y-cpt.y,npt.x-cpt.x))
 		drot=(rot2-rot1)%360
-		
+
 		--Angle to expand at
 		nrot=(0.5*drot+90)%180
 		if ch<0 then nrot=nrot+180 end
-		
+
 		--Adjusted radius
 		__ar=math.cos(torad(ch*90-nrot)) --<3
 		ar=(__ar<0.00001 and r) or r/math.abs(__ar)
-		
+
 		newx=cpt.x*sc
 		newy=cpt.y*sc
-		
+
 		if r~=0 then
 			newx=newx+sc*round(ar*math.cos(torad(nrot+rot1)))
 			newy=newy+sc*round(ar*math.sin(torad(nrot+rot1)))
 		end
-		
+
 		table.insert(nvt,{["class"]=cpt.class,
 			["x"]=newx,
 			["y"]=newy})
 	end
-	
+
 	--Check for "crossovers"
 	--New data type to store points with same coordinates
 	local mvt={}
@@ -177,35 +164,35 @@ function grow(vt,r,sc)
 	for i,p in ipairs(wnvt) do
 		table.insert(mvt,{["class"]={p.class},["x"]=p.x,["y"]=p.y})
 	end
-	
+
 	--Number of merges so far
 	merges=0
-	
+
 	for i=2,#wnvt,1 do
 		mi=i-merges
 		dx=wvt[i].x-wvt[i-1].x
 		dy=wvt[i].y-wvt[i-1].y
 		ndx=wnvt[i].x-wnvt[i-1].x
 		ndy=wnvt[i].y-wnvt[i-1].y
-		
+
 		if (dy*ndy<0 or dx*ndx<0) then
 			--Multiplicities
 			c1=#mvt[mi-1].class
 			c2=#mvt[mi].class
-			
+
 			--Weighted average
 			mvt[mi-1].x=(c1*mvt[mi-1].x+c2*mvt[mi].x)/(c1+c2)
 			mvt[mi-1].y=(c1*mvt[mi-1].y+c2*mvt[mi].y)/(c1+c2)
-			
+
 			--Merge classes
 			mvt[mi-1].class={unpack(mvt[mi-1].class),unpack(mvt[mi].class)}
-			
+
 			--Delete point
 			table.remove(mvt,mi)
 			merges=merges+1
 		end
 	end
-	
+
 	--Rebuild wrapped new vector table
 	wnvt={}
 	for i,p in ipairs(mvt) do
@@ -213,12 +200,12 @@ function grow(vt,r,sc)
 			table.insert(wnvt,{["class"]=pclass,["x"]=p.x,["y"]=p.y})
 		end
 	end
-	
+
 	return unwrap(wnvt)
 end
 
 function merge_identical(vt)
-	local mvt=shallow_copy(vt)
+	local mvt = util.copy(vt)
 	i=2
 	lx=mvt[1].x
 	ly=mvt[1].y
@@ -253,12 +240,12 @@ end
 --to allow for wraparound calculations
 function wrap(vt)
 	local wvt={}
-	table.insert(wvt,shallow_copy(vt[#vt]))
+	table.insert(wvt,util.copy(vt[#vt]))
 	for i=1,#vt,1 do
-		table.insert(wvt,shallow_copy(vt[i]))
+		table.insert(wvt,util.copy(vt[i]))
 	end
-	table.insert(wvt,shallow_copy(vt[1]))
-	
+	table.insert(wvt,util.copy(vt[1]))
+
 	--Add linked list capability. Because. Hacky fix gogogogo
 	for i=2,#wvt-1 do
 		wvt[i].prev=wvt[i-1]
@@ -267,7 +254,7 @@ function wrap(vt)
 	--And link the start and end
 	wvt[2].prev=wvt[#wvt-1]
 	wvt[#wvt-1].next=wvt[2]
-	
+
 	return wvt
 end
 
@@ -275,16 +262,13 @@ end
 function unwrap(wvt)
 	local vt={}
 	for i=2,#wvt-1,1 do
-		table.insert(vt,shallow_copy(wvt[i]))
+		table.insert(vt,util.copy(wvt[i]))
 	end
 	return vt
 end
 
 --Main execution function
 function blur_clip(sub,sel)
-
-	local meta,styles = karaskel.collect_head(sub, false)
-	
 	--GUI config
 	config=
 	{
@@ -323,57 +307,54 @@ function blur_clip(sub,sel)
 			x=1,y=2,width=1,height=1
 		}
 	}
-	
+
 	--Show dialog
 	pressed,results=aegisub.dialog.display(config,{"Go","Cancel"})
 	if pressed=="Cancel" then aegisub.cancel() end
-	
+
 	--Size of the blur
 	bsize=results["bsize"]
-	
+
 	--Scale exponent for all the numbers
 	sexp=results["bprec"]
-	
+
 	--How far to offset the blur by
 	boffset=0
 	if results["bpos"]=="inside" then boffset=bsize
 	elseif results["bpos"]=="middle" then boffset=bsize/2 end
-	
+
 	--How far to offset the next line read
 	lines_added=0
-	
+
+	libLyger:set_sub(sub, sel)
 	for si,li in ipairs(sel) do
-		
 		--Progress report
 		aegisub.progress.task("Processing line "..si.."/"..#sel)
 		aegisub.progress.set(100*si/#sel)
-		
+
 		--Read in the line
-		line=sub[li+lines_added]
-		
-		--Preprocess
-		karaskel.preproc_line(sub,meta,styles,line)
-		
+		line = libLyger.lines[li]
+
 		--Comment it out
 		line.comment=true
 		sub[li+lines_added]=line
 		line.comment=false
-		
+
 		--Find the clipping shape
 		ctype,tvector=line.text:match("\\(i?clip)%(([^%(%)]+)%)")
-		
+
 		--Cancel if it doesn't exist
 		if tvector==nil then
 			aegisub.log("Make sure all lines have a clip statement.")
 			aegisub.cancel()
 		end
-		
+
 		--Get position and add
-		px,py=get_pos(line)
+		px,py = libLyger:get_pos(line)
 		if line.text:match("\\pos")==nil and line.text:match("\\move")==nil then
 			line.text=string.format("{\\pos(%d,%d)}",px,py)..line.text
 		end
-		
+
 		--Round
 		local function rnd(num)
 			num=tonumber(num) or 0
@@ -390,17 +371,17 @@ function blur_clip(sub,sel)
 			tvector=string.format("m %d %d l %d %d %d %d %d %d",
 				rnd(_x1),rnd(_y1),rnd(_x2),rnd(_y1),rnd(_x2),rnd(_y2),rnd(_x1),rnd(_y2))
 		end
-		
+
 		--The original table and original scale exponent
 		otable,oexp=make_vector_table(tvector)
-		
+
 		--Effective scale and scale exponent
 		eexp=sexp-oexp+1
 		escale=2^(eexp-1)
 		--aegisub.log("Escale: %.2f",escale)
-		
+
 		--The innermost line
-		iline=shallow_copy(line)
+		iline = util.copy(line)
 		itable={}
 		if ctype=="iclip" then
 			itable=grow(otable,bsize*2^(oexp-1)-boffset,escale)
@@ -408,35 +389,35 @@ function blur_clip(sub,sel)
 			itable=grow(otable,-1*boffset,escale)
 		end
 		iline.text=iline.text:gsub("\\i?clip%([^%(%)]+%)","\\"..ctype.."("..sexp..","..vtable_to_string(itable)..")")
-		
+
 		--Add it to the subs
 		sub.insert(li+lines_added+1,iline)
 		lines_added=lines_added+1
-		
+
 		--Set default alpha values
 		dalpha={}
 		dalpha[1]=alpha_from_style(line.styleref.color1)
 		dalpha[2]=alpha_from_style(line.styleref.color2)
 		dalpha[3]=alpha_from_style(line.styleref.color3)
 		dalpha[4]=alpha_from_style(line.styleref.color4)
-		
+
 		--First tag block
 		ftag=line.text:match("^{[^{}]*}")
 		if ftag==nil then
 			ftag="{}"
 			line.text="{}"..line.text
 		end
-		
+
 		--List of alphas not yet accounted for in the first tag
 		unacc={}
-		
+
 		if ftag:match("\\alpha")==nil then
 			if ftag:match("\\1a")==nil then table.insert(unacc,1) end
 			if ftag:match("\\2a")==nil then table.insert(unacc,2) end
 			if ftag:match("\\3a")==nil then table.insert(unacc,3) end
 			if ftag:match("\\4a")==nil then table.insert(unacc,4) end
 		end
-		
+
 		--Add tags if any are unaccounted for
 		if #unacc>0 then
 			--If all the unaccounted-for alphas are equal, only add an "alpha" tag
@@ -445,7 +426,7 @@ function blur_clip(sub,sel)
 			for _k,_a in ipairs(unacc) do
 				if dalpha[_a]~=_tempa then _equal=false end
 			end
-			
+
 			if _equal then line.text=line.text:gsub("^{","{\\alpha"..dalpha[unacc[1]])
 			else
 				for _k,ui in ipairs(unacc) do
@@ -453,33 +434,33 @@ function blur_clip(sub,sel)
 				end
 			end
 		end
-		
+
 		prevclip=itable
-		
+
 		for j=1,math.ceil(bsize*escale*2^(oexp-1)),1 do
-			
+
 			--Interpolation factor
 			factor=j/(bsize*escale+1)
-			
+
 			--Flip if it's an iclip
 			if ctype=="iclip" then factor=1-factor end
-			
+
 			--Copy the line
-			tline=shallow_copy(line)
-			
+			tline = util.copy(line)
+
 			--Sub in the interpolated alphas
 			tline.text=tline.text:gsub("\\alpha([^\\{}]+)",
 				function(a) return "\\alpha"..interpolate_alpha(factor,a,"&HFF&") end)
 			tline.text=tline.text:gsub("\\([1-4]a)([^\\{}]+)",
 				function(a,b) return "\\"..a..interpolate_alpha(factor,b,"&HFF&") end)
-			
+
 			--Write the correct clip
 			thisclip=grow(otable,j/escale-boffset,escale)
 			clipstring=vtable_to_string(thisclip)..vtable_to_string(reverse_vector_table(prevclip))
 			prevclip=thisclip
-			
+
 			tline.text=tline.text:gsub("\\i?clip%([^%(%)]+%)","\\clip("..sexp..","..clipstring..")")
-			
+
 			--Insert the line
 			sub.insert(li+lines_added+1,tline)
 			lines_added=lines_added+1
@@ -488,22 +469,4 @@ function blur_clip(sub,sel)
 	aegisub.set_undo_point(script_name)
 end
 
-aegisub.register_macro(script_name,script_description,blur_clip)
-
-
-
---[[HANDLING FOR lib-lyger.lua NOT FOUND CASE]]--
-else
-require "clipboard"
-function lib_err()
-	aegisub.dialog.display({{class="label",
-		label="lib-lyger.lua is missing or out-of-date.\n"..
-		"Please go to:\n\n"..
-		"https://github.com/lyger/Aegisub_automation_scripts\n\n"..
-		"and download the latest version of lib-lyger.lua.\n"..
-		"(The URL will be copied to your clipboard once you click OK)",
-		x=0,y=0,width=1,height=1}})
-	clipboard.set("https://github.com/lyger/Aegisub_automation_scripts")
-end
-aegisub.register_macro(script_name,script_description,lib_err)
-end
+rec:registerMacro(blur_clip)

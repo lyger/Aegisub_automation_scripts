@@ -1,11 +1,10 @@
 --[[
 README:
 
-***REQUIRES AEGISUB 3.1.0 r7725 OR LATER***
 ***ALSO REQUIRES(1) CONVERT.EXE STANDALONE FROM IMAGEMAGICK***
 
 (1) Only if you want to use non-bitmap images or the resize capability.
-    Save the binary to your Aegisub\automation\autoload directory:
+	Save the binary to your Aegisub\automation\autoload directory:
 	http://www.mediafire.com/download/zdxn75nte1n6cq6/convert.exe
 
 
@@ -43,15 +42,21 @@ Supports \move but you are strongly advised NOT to use it.
 
 ]]
 
-script_name="Image to .ass"
-script_description="Converts bitmap image to .ass lines."
-script_version="2.2"
+script_name = "Image to .ass"
+script_description = "Converts bitmap image to .ass lines."
+script_version = "2.3.0"
+script_author = "lyger"
+script_namespace = "lyger.Image2ASS"
 
-require "karaskel"
-	
---Blatantly copied from Aegisub-Motion
+local DependencyControl = require("l0.DependencyControl")
+local rec = DependencyControl{
+	feed = "https://raw.githubusercontent.com/TypesettingTools/lyger-Aegisub-Scripts/master/DependencyControl.json",
+	{ "aegisub.util", "ffi" }
+}
+local util, ffi = rec:requireModules()
+
 --[[ Detect whether to use *nix or Windows style paths. ]]--
-winpaths = not aegisub.decode_path('?data'):match('/')
+local winpaths = ffi.os == "Windows"
 
 function make_config()
 	return
@@ -75,29 +80,11 @@ function make_config()
 	}
 end
 
---Creates a shallow copy of the given table
-local function shallow_copy(source_table)
-	new_table={}
-	for key,value in pairs(source_table) do
-		new_table[key]=value
-	end
-	return new_table
-end
-
 --Parse out properties from a bitmap header
 function parse_header(fn)
 	--Open
 	_file=io.open(fn,"rb")
-	
-	if _file==nil then
-		aegisub.dialog.display({{x=0,y=0,width=1,height=1,class="label",
-			label="Whoops! Couldn't open file. This is probably\n"..
-			"because you are using Aegisub 3.0.4 or earlier.\n"..
-			"Go to http://plorkyeran.com/aegisub/ to download\n"..
-			"a recent trunk build."}},{"OK"})
-		aegisub.cancel()
-	end
-	
+
 	--Read irrelevant data
 	_file:read(18)
 
@@ -128,19 +115,19 @@ function parse_header(fn)
 	bitsize=string.byte(_file:read(1))
 
 	_ws=bitsize/8
-	
+
 	_file:close()
-	
+
 	--Return width, height, and wordsize
 	return _iw, _ih, _ws
 end
 
 function convert_to_bmp(filename,scale)
-	
+
 	local cfname=filename:gsub("%.%a+$",".bmp")
-	
+
 	local prefix=aegisub.decode_path("?data").."\\automation\\autoload\\"
-	
+
 	--Make sure convert binary exists
 	local cex=io.open(prefix.."convert.exe")
 	if cex==nil then
@@ -152,48 +139,48 @@ function convert_to_bmp(filename,scale)
 	else
 		cex:close()
 	end
-	
+
 	--Write the self-deleting batch and run it
 	opts="-type TrueColor"
-	if scale then 
+	if scale then
 		opts=opts.." -resize "..scale.."%%"
 		cfname=cfname:gsub("%.bmp$","_"..scale..".bmp")
 	end
-	
+
 	--Make sure the filenames are different
 	if cfname==filename then
 		cfname=cfname:gsub("%.bmp$","_copy.bmp")
 	end
-	
+
 	local command="\""..prefix.."convert.exe\" \""
 		..filename.."\" "..opts.." BMP3:\""..cfname.."\""
-	
+
 	convertfile=io.open(prefix.."image2ass_converter.bat","wb")
 	convertfile:write(command.."\ndel %0")
 	convertfile:close()
-	
+
 	os.execute("\""..prefix.."image2ass_converter.bat\"")
-	
+
 	return cfname
-	
+
 end
 
 function run_i2a(subs,sel)
-	
-	ffilter="Bitmap images (.bmp)|*.bmp"
+
+	local ffilter = "Bitmap images (.bmp)|*.bmp"
 	if winpaths then ffilter="All images (.bmp; .jpg; .png; .gif)|*.bmp;*.jpg;*.png;*.gif" end
 	--Prompt for bitmap image
 	fname=aegisub.dialog.open("Select image","","",ffilter,false,true)
 	if not fname then aegisub.cancel() end
-	
+
 	cleanfiles={}
 	--Convert to .bmp if not .bmp already
 	if not fname:lower():match("%.bmp$") then
 		fname=convert_to_bmp(fname)
 		table.insert(cleanfiles,fname)
 	end
-	
-	
+
+
 	--Initialize some values
 	dconfig=make_config()
 	results=nil
@@ -203,10 +190,10 @@ function run_i2a(subs,sel)
 	repeat
 		--Show options
 		pressed,results=aegisub.dialog.display(dconfig,buttons)
-	
+
 		if pressed=="Cancel" then aegisub.cancel()
 		elseif pressed=="Add alpha mask" then
-		
+
 			--Prompt for bitmap image
 			afname=aegisub.dialog.open("Select image to use as alpha mask","","",ffilter,false,true)
 			if not afname then
@@ -222,10 +209,10 @@ function run_i2a(subs,sel)
 					label="Alpha mask loaded."})
 				table.remove(buttons,2)
 			end
-			
+
 		end
 	until pressed=="Convert"
-	
+
 	if results["resize"]~=100 then
 		fname=convert_to_bmp(fname,results["resize"])
 		table.insert(cleanfiles,fname)
@@ -234,7 +221,7 @@ function run_i2a(subs,sel)
 			table.insert(cleanfiles,afname)
 		end
 	end
-	
+
 	--Parse headers
 	rowsize,imgheight,wordsize=parse_header(fname)
 	awordsize=0
@@ -247,20 +234,20 @@ function run_i2a(subs,sel)
 			aegisub.cancel()
 		end
 	end
-	
+
 	--Check wordsize
 	if (wordsize~=3 and wordsize~=4) or (alpha and awordsize~=3 and awordsize~=4) then
 		aegisub.dialog.display({{x=0,y=0,width=1,height=1,class="label",
 				label="Error, images must be 24-bit or 32-bit bitmap."}},{"OK"})
 		aegisub.cancel()
 	end
-	
+
 	--Compile results
 	tolerance=results["tol"]
 	px=results["pxsize"]
 	oneline=(results["otype"]=="all on one line")
 	readpos=(results["postype"]=="from line")
-	
+
 	--Open the file
 	file=io.open(fname,"rb")
 	file:read(54)
@@ -268,7 +255,7 @@ function run_i2a(subs,sel)
 		afile=io.open(afname,"rb")
 		afile:read(54)
 	end
-	
+
 	--Distance in rgb space
 	local function cdist(r1,g1,b1,r2,g2,b2)
 		return math.sqrt((r1-r2)^2+(g1-g2)^2+(b1-b2)^2)
@@ -289,7 +276,7 @@ function run_i2a(subs,sel)
 	aval="00"
 	praval="00"
 	ppraval="00"
-	
+
 	--Previous color code used
 	pcode=""
 
@@ -304,37 +291,37 @@ function run_i2a(subs,sel)
 
 	--Force alpha tag if alpha channel is on
 	if alpha then ppraval="GG" end
-	
+
 	while true do
 		byte=file:read(wordsize)
 		bytesread=bytesread+wordsize
-		
+
 		if byte==nil then break end
-		
+
 		b,g,r=byte:match("^(.)(.)(.)")
-		
+
 		if b==nil or g==nil or r==nil then break end
-		
+
 		r=string.byte(r)
 		g=string.byte(g)
 		b=string.byte(b)
-		
+
 		--Temporary old values of the average
 		_tr,_tg,_tb=_r,_g,_b
-		
+
 		if _r>=0 then
-			
+
 			--Keep a running average of the rgb values
 			_r=_r+(r-_r)/(width+1)
 			_g=_g+(g-_g)/(width+1)
 			_b=_b+(b-_b)/(width+1)
-			
+
 			--Keep a running standard deviation or the rbg values
 			sr=sr+(r-_tr)*(r-_r)
 			sg=sg+(g-_tg)*(g-_g)
 			sb=sb+(b-_tb)*(b-_b)
 		end
-		
+
 		--Read and average alpha channel
 		if alpha then
 			abyte=afile:read(awordsize)
@@ -343,23 +330,23 @@ function run_i2a(subs,sel)
 			aval=string.format("%02X",
 				math.floor((string.byte(ab)+string.byte(ag)+string.byte(ar))/3))
 		end
-		
+
 		if ((cdist(lr,lg,lb,r,g,b)<tolerance
 			and cdist(sr,sg,sb,0,0,0)<tolerance and aval==praval))
 			or (aval=="FF" and aval==praval) then
-		
+
 			--Increase width
 			width=width+1
-			
+
 		else
-			
+
 			--Only add the colors if this is not the first pixel in a row
 			if _r>=0 then
 				shape=string.format("m 0 0 l 0 %d %d %d %d 0",px,width*px,px,width*px)
-				
+
 				--Add color code
 				code=string.format("%02X%02X%02X",_tb,_tg,_tr)
-			
+
 				line=line.."{"
 				if praval~=ppraval then
 					line=line.."\\alpha&H"..praval.."&"
@@ -370,31 +357,31 @@ function run_i2a(subs,sel)
 				end
 				line=line.."}"..shape
 			end
-			
+
 			--Reset width and colors
 			width=1
 			_r,_g,_b=r,g,b
 			sr,sg,sb=0,0,0
-		
+
 			--Set last alpha value
 			if alpha then
 				ppraval=praval
 				praval=aval
 			end
 		end
-		
+
 		--Set last r,g,b values
 		lr,lg,lb=r,g,b
-		
+
 		counter=counter+1
 		if counter%rowsize==0 then
-		
+
 			--Read filler bytes
 			file:read(math.abs((4-bytesread)%4))
 			if alpha then afile:read(math.abs((4-abytesread)%4)) end
 			bytesread=0
 			abytesread=0
-			
+
 			--Dump current shape on end of line
 			code=string.format("%02X%02X%02X",_b,_g,_r)
 			shape=string.format("m 0 0 l 0 %d %d %d %d 0",px,width*px,px,width*px)
@@ -406,7 +393,7 @@ function run_i2a(subs,sel)
 				line=line.."\\c&H"..code.."&"
 			end
 			line=line.."}"..shape
-			
+
 			--Sometimes the algorithm inserts blank tags. I can't be bothered
 			--to figure out why, so just remove them
 			while line:match("0{}m") do
@@ -417,35 +404,35 @@ function run_i2a(subs,sel)
 						return string.format("m 0 0 l 0 %d %d %d %d 0",px,nw,px,nw)
 					end)
 			end
-			
+
 			--Add line to table
 			if imgheight<0 then
 				table.insert(imgtable,line)
 			else
 				table.insert(imgtable,1,line)
 			end
-			
+
 			--Progress report
 			rprog=math.floor(counter/rowsize)
 			aegisub.progress.set(rprog*100/math.abs(imgheight))
 			aegisub.progress.task(string.format("Processing %d/%d rows",rprog,math.abs(imgheight)))
-			
+
 			--Reset the line
 			line=""
-			
+
 			--Reset previous colors
 			_r=-1*tolerance-1
 			_g=-1*tolerance-1
 			_b=-1*tolerance-1
 			sr,sg,sb=_r,_g,_b
 			lr,lg,lb=_r,_g,_b
-			
+
 			--Reset alpha if alpha channel is on
 			if alpha then praval="GG" end
-			
+
 			--Reset previous code
 			pcode=""
-			
+
 			--Reset width
 			width=1
 		end
@@ -454,27 +441,27 @@ function run_i2a(subs,sel)
 	--Close files
 	file:close()
 	if alpha then afile:close() end
-	
+
 	aegisub.progress.task("Writing to subtitles...")--No progress bar because this should be near instant
-	
+
 	--Read in the line
 	line=subs[sel[1]]
 	line.comment=false
-	
+
 	--Get style info
 	meta,styles=karaskel.collect_head(subs,false)
 	lstyle=styles[line.style]
-	
+
 	--Estimate filesize
 	fsize=0
-	
+
 	--New selection
 	newsel={}
-	
+
 	--If the drawing is to be written all on one line
 	if oneline then
-		oline=shallow_copy(line)
-		
+		oline=util.copy(line)
+
 		rtext="{"
 		if readpos then
 			if oline.text:match("\\move") then
@@ -486,27 +473,27 @@ function run_i2a(subs,sel)
 				rtext=rtext..ptag
 			end
 		end
-		
+
 		if lstyle.outline~=0 then rtext=rtext.."\\bord0" end
 		if lstyle.shadow~=0 then rtext=rtext.."\\shad0" end
-		
+
 		rtext=rtext.."}"
 		rtext=rtext:gsub("{}","")
-		
+
 		prefix="{\\p1}"
 		eol="{\\p0}\\N"
 		for i,row in ipairs(imgtable) do
 			rtext=rtext..prefix..row
 			if i~=#imgtable then rtext=rtext..eol end
 		end
-		
+
 		oline.text=rtext
 		fsize=#rtext+44+#oline.style+#oline.effect+#oline.actor
-		
+
 		subs.insert(sel[1]+1,oline)
-		
+
 		newsel={sel[1]+1}
-		
+
 	--If the drawing is to be written across multiple lines
 	else
 		prefix="{\\p1"
@@ -531,10 +518,10 @@ function run_i2a(subs,sel)
 			align=line.text:match("\\an?%d%d?") or align
 		end
 		prefix=prefix..align..pfmt
-		
+
 		if lstyle.outline~=0 then prefix=prefix.."\\bord0" end
 		if lstyle.shadow~=0 then prefix=prefix.."\\shad0" end
-		
+
 		prefix=prefix.."}"
 
 		inserts=1
@@ -546,7 +533,7 @@ function run_i2a(subs,sel)
 				if alphavalue=="FF" then dowrite=false end
 			end
 			if dowrite then
-				nline=shallow_copy(line)
+				nline=util.copy(line)
 				nline.text=prefix:format(bx,by+(i-1)*px,bx2,by2+(i-1)*px)
 				nline.text=nline.text..row
 				subs.insert(sel[1]+inserts,nline)
@@ -556,11 +543,11 @@ function run_i2a(subs,sel)
 			end
 		end
 	end
-	
+
 	line.text=fname
 	line.comment=true
 	subs[sel[1]]=line
-	
+
 	mbytes=string.format("%.2f",fsize/1048576):gsub("0+$",""):gsub("%.$","")
 	msg="Conversion finished.\nApproximate added filesize: "..mbytes.." MB."
 	if mbytes=="0" then
@@ -571,12 +558,12 @@ function run_i2a(subs,sel)
 	aegisub.dialog.display({{x=0,y=0,width=1,height=1,class="label",
 		label=msg}},
 		{"OK"})
-	
+
 	--Delete generated bitmap, if applicable
 	for _,cleanf in ipairs(cleanfiles) do os.execute("del \""..cleanf.."\"") end
-	
+
 	aegisub.set_undo_point(script_name)
 	return newsel
 end
 
-aegisub.register_macro(script_name,script_description,run_i2a)
+rec:registerMacro(run_i2a)

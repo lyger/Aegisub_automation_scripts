@@ -1,0 +1,691 @@
+{
+  "dependencyControlFeedFormatVersion": "0.2.0",
+  "name": "lyger's Automation Scripts",
+  "description": "Main repository for all of lyger's automation scripts.",
+  "baseUrl": "https://github.com/TypesettingTools/lyger-Aegisub-Scripts",
+  "fileBaseUrl": "https://raw.githubusercontent.com/TypesettingTools/lyger-Aegisub-Scripts/@{channel}/macros/@{namespace}/",
+  "url": "@{baseUrl}",
+  "maintainer": "lyger",
+  "knownFeeds": {
+    "SubInspector": "https://raw.githubusercontent.com/TypesettingTools/SubInspector/master/DependencyControl.json",
+    "ASSFoundation": "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"
+  },
+  "macros": {
+    "lyger.BorderSplit": {
+      "url": "@{baseUrl}#@{namespace}",
+      "author": "lyger",
+      "name": "Duplicate and Blur",
+      "description": "Splits a bordered line into two layers, so both text and outline have blur.",
+      "channels": {
+        "master": {
+          "version": "1.1.0",
+          "released": "2015-05-14",
+          "default": true,
+          "files": [
+            {
+              "name": ".lua",
+              "url": "@{fileBaseUrl}@{fileName}",
+              "sha1": "CAA12243177B44E2E92E61DF45029337474606F6"
+            }
+          ],
+          "requiredModules": [
+            {
+              "moduleName": "lyger.LibLyger",
+              "name": "LibLyger",
+              "url": "@{baseUrl}",
+              "version": "2.0.0"
+            },
+            {
+              "moduleName": "aegisub.util"
+            }
+          ]
+        }
+      },
+      "changelog": {
+        "1.1.0": [
+          "Added DependencyControl"
+        ]
+      }
+    },
+    "lyger.CircleText": {
+      "url": "@{baseUrl}#@{namespace}",
+      "author": "lyger",
+      "name": "Circular text",
+      "description": "Puts the text on a circular arc centered on the origin.",
+      "channels": {
+        "master": {
+          "version": "0.2.0",
+          "released": "2015-05-14",
+          "default": true,
+          "files": [
+            {
+              "name": ".lua",
+              "url": "@{fileBaseUrl}@{fileName}",
+              "sha1": "A0F6ED38C9EFACAACA1EB1C164ED69A7E4CAE300"
+            }
+          ],
+          "requiredModules": [
+            {
+              "moduleName": "lyger.LibLyger",
+              "name": "LibLyger",
+              "url": "@{baseUrl}",
+              "version": "2.0.0"
+            },
+            {
+              "moduleName": "aegisub.util"
+            }
+          ]
+        }
+      },
+      "changelog": {
+        "0.2.0": [
+          "Added DependencyControl"
+        ]
+      }
+    },
+    "lyger.ClipBlur": {
+      "url": "@{baseUrl}#@{namespace}",
+      "author": "lyger",
+      "name": "Blur clip",
+      "description": "Blurs a vector clip.",
+      "channels": {
+        "master": {
+          "version": "1.2.0",
+          "released": "2015-05-14",
+          "default": true,
+          "files": [
+            {
+              "name": ".lua",
+              "url": "@{fileBaseUrl}@{fileName}",
+              "sha1": "5A532F8C3CABB62233740B42E070896B7B373B9E"
+            }
+          ],
+          "requiredModules": [
+            {
+              "moduleName": "lyger.LibLyger",
+              "name": "LibLyger",
+              "url": "@{baseUrl}",
+              "version": "2.0.0"
+            },
+            {
+              "moduleName": "aegisub.util"
+            }
+          ]
+        }
+      },
+      "changelog": {
+        "1.2.0": [
+          "Added DependencyControl"
+        ]
+      }
+    },
+    "lyger.ClipGrad": {
+      "url": "@{baseUrl}#@{namespace}",
+      "author": "lyger",
+      "name": "Gradient along clip edge",
+      "description": "Color gradient along clip edge. Solid alpha only.",
+      "channels": {
+        "master": {
+          "version": "0.2.0",
+          "released": "2015-05-14",
+          "default": true,
+          "files": [
+            {
+              "name": ".lua",
+              "url": "@{fileBaseUrl}@{fileName}",
+              "sha1": "94DC87F567CB305A38D04B2589079084A77C4586"
+            }
+          ],
+          "requiredModules": [
+            {
+              "moduleName": "lyger.LibLyger",
+              "name": "LibLyger",
+              "url": "@{baseUrl}",
+              "version": "2.0.0"
+            },
+            {
+              "moduleName": "aegisub.util"
+            }
+          ]
+        }
+      },
+      "changelog": {
+        "0.2.0": [
+          "Added DependencyControl",
+          "The color picker dialogs no longer show incorrect default colors."
+        ]
+      }
+    },
+    "lyger.ClipShifter": {
+      "url": "@{baseUrl}#@{namespace}",
+      "author": "lyger",
+      "name": "Clip shifter",
+      "description": "Reads a rectangular clip from the first line and places it on the other highlighted ones.",
+      "channels": {
+        "master": {
+          "version": "0.2.0",
+          "released": "2015-05-14",
+          "default": true,
+          "files": [
+            {
+              "name": ".lua",
+              "url": "@{fileBaseUrl}@{fileName}",
+              "sha1": "25F19364EE34538ED7D0D90E9D1F33E0660E9997"
+            }
+          ],
+          "requiredModules": [
+            {
+              "moduleName": "lyger.LibLyger",
+              "name": "LibLyger",
+              "url": "@{baseUrl}",
+              "version": "2.0.0"
+            },
+            {
+              "moduleName": "aegisub.util"
+            }
+          ]
+        }
+      },
+      "changelog": {
+        "0.2.0": [
+          "Added DependencyControl"
+        ]
+      }
+    },
+    "lyger.FbfTransform": {
+      "url": "@{baseUrl}#@{namespace}",
+      "author": "lyger",
+      "name": "Frame-by-frame transform",
+      "description": "Smoothly transforms between the first and last selected lines.",
+      "channels": {
+        "master": {
+          "version": "2.0.0",
+          "released": "2015-05-14",
+          "default": true,
+          "files": [
+            {
+              "name": ".moon",
+              "url": "@{fileBaseUrl}@{fileName}",
+              "sha1": "451BB2F5E146D879010874181C494344E5369357"
+            }
+          ],
+          "requiredModules": [
+            {
+              "moduleName": "lyger.LibLyger",
+              "name": "LibLyger",
+              "url": "@{baseUrl}",
+              "version": "2.0.0"
+            },
+            {
+              "moduleName": "l0.ASSFoundation.Common",
+              "name": "ASSFoundation (Common)",
+              "url": "https://github.com/TypesettingTools/ASSFoundation",
+              "version": "0.2.0",
+              "feed": "@{feed:ASSFoundation}"
+            },
+            {
+              "moduleName": "aegisub.util"
+            }
+          ]
+        }
+      },
+      "changelog": {
+        "2.0.0": [
+          "Added DependencyControl",
+          "The old preset configuration system was swapped out in favor of a DepCtrl-backed solution that uses a standard JSON file. Previous presets from fbf-presets.cfg are not transferred automatically.",
+          "FbfTransform now has its own automation submenu and will register a macro for each preset."
+        ]
+      }
+    },
+    "lyger.GradientByChar": {
+      "url": "@{baseUrl}#@{namespace}",
+      "author": "lyger",
+      "name": "Gradient by character",
+      "description": "Smoothly transforms tags across your line, by character.",
+      "channels": {
+        "master": {
+          "version": "1.3.0",
+          "released": "2015-05-14",
+          "default": true,
+          "files": [
+            {
+              "name": ".lua",
+              "url": "@{fileBaseUrl}@{fileName}",
+              "sha1": "7DDC0F44825DA18082972AC70BA05CD2B27FC351"
+            }
+          ],
+          "requiredModules": [
+            {
+              "moduleName": "lyger.LibLyger",
+              "name": "LibLyger",
+              "url": "@{baseUrl}",
+              "version": "2.0.0"
+            },
+            {
+              "moduleName": "aegisub.util"
+            },
+            {
+              "moduleName": "aegisub.re"
+            }
+          ]
+        }
+      },
+      "changelog": {
+        "1.3.0": [
+          "Added DependencyControl"
+        ]
+      }
+    },
+    "lyger.GradientEverything": {
+      "url": "@{baseUrl}#@{namespace}",
+      "author": "lyger",
+      "name": "Gradient Everything",
+      "description": "This will gradient everything.",
+      "channels": {
+        "master": {
+          "version": "2.0.0",
+          "released": "2015-05-14",
+          "default": true,
+          "files": [
+            {
+              "name": ".moon",
+              "url": "@{fileBaseUrl}@{fileName}",
+              "sha1": "8FD3BEC3D8A3DD8B39D9EAD7285A3AABA0187B2A"
+            }
+          ],
+          "requiredModules": [
+            {
+              "moduleName": "lyger.LibLyger",
+              "name": "LibLyger",
+              "url": "@{baseUrl}",
+              "version": "2.0.0"
+            },
+            {
+              "moduleName": "SubInspector.Inspector",
+              "version": "0.6.0",
+              "feed": "@{feed:SubInspector}",
+              "optional": true
+            },
+            {
+              "moduleName": "l0.ASSFoundation.Common",
+              "name": "ASSFoundation (Common)",
+              "url": "https://github.com/TypesettingTools/ASSFoundation",
+              "version": "0.2.0",
+              "feed": "@{feed:ASSFoundation}"
+            },
+            {
+              "moduleName": "aegisub.util"
+            }
+          ]
+        }
+      },
+      "changelog": {
+        "2.0.0": [
+          "Added DependencyControl",
+          "The old preset configuration system was swapped out in favor of a DepCtrl-backed solution that uses a standard JSON file. Previous presets from ge-presets.cfg are not transferred automatically.",
+          "Gradient Everything now has its own automation submenu and will register a macro for each preset."
+        ]
+      }
+    },
+    "lyger.Image2ASS": {
+      "url": "@{baseUrl}#@{namespace}",
+      "author": "lyger",
+      "name": "Image to .ass",
+      "description": "Converts bitmap image to .ass lines.",
+      "channels": {
+        "master": {
+          "version": "2.3.0",
+          "released": "2015-05-14",
+          "default": true,
+          "files": [
+            {
+              "name": ".lua",
+              "url": "@{fileBaseUrl}@{fileName}",
+              "sha1": "38E47B0145BB319C782BC6F3593E3486D62E6109"
+            }
+          ],
+          "requiredModules": [
+            {
+              "moduleName": "aegisub.util"
+            },
+            {
+              "moduleName": "ffi"
+            }
+          ]
+        }
+      },
+      "changelog": {
+        "2.3.0": [
+          "Added DependencyControl"
+        ]
+      }
+    },
+    "lyger.KaraHelper": {
+      "url": "@{baseUrl}#@{namespace}",
+      "author": "lyger",
+      "name": "Karaoke helper",
+      "description": "Miscellaneous tools for assisting in karaoke timing.",
+      "channels": {
+        "master": {
+          "version": "0.2.0",
+          "released": "2015-05-14",
+          "default": true,
+          "files": [
+            {
+              "name": ".lua",
+              "url": "@{fileBaseUrl}@{fileName}",
+              "sha1": "B006EE2249A56C08CDE9082B1BE6C538D81ED834"
+            }
+          ],
+          "requiredModules": [
+            {
+              "moduleName": "lyger.LibLyger",
+              "name": "LibLyger",
+              "url": "@{baseUrl}",
+              "version": "2.0.0"
+            }
+          ]
+        }
+      },
+      "changelog": {
+        "0.2.0": [
+          "Added DependencyControl"
+        ]
+      }
+    },
+    "lyger.KaraReplacer": {
+      "url": "@{baseUrl}#@{namespace}",
+      "author": "lyger",
+      "name": "Karaoke replacer",
+      "description": "Replaces the syllables of a verse.",
+      "channels": {
+        "master": {
+          "version": "0.3.0",
+          "released": "2015-05-14",
+          "default": true,
+          "files": [
+            {
+              "name": ".lua",
+              "url": "@{fileBaseUrl}@{fileName}",
+              "sha1": "9F67FF9EA95346EBB73CDBD9698563DA0B03BA01"
+            }
+          ]
+        }
+      },
+      "changelog": {
+        "0.3.0": [
+          "Added DependencyControl"
+        ]
+      }
+    },
+    "lyger.LayerIncrement": {
+      "url": "@{baseUrl}#@{namespace}",
+      "author": "lyger",
+      "name": "Layer increment",
+      "description": "Makes increasing or decreasing layer numbers.",
+      "channels": {
+        "master": {
+          "version": "1.1.0",
+          "released": "2015-05-14",
+          "default": true,
+          "files": [
+            {
+              "name": ".lua",
+              "url": "@{fileBaseUrl}@{fileName}",
+              "sha1": "A0AAE342F20143619A05EA1AECBADFF3D414798E"
+            }
+          ]
+        }
+      },
+      "changelog": {
+        "1.1.0": [
+          "Added DependencyControl"
+        ]
+      }
+    },
+    "lyger.LuaInterpret": {
+      "url": "@{baseUrl}#@{namespace}",
+      "author": "lyger",
+      "name": "Lua Interpreter",
+      "description": "Run Lua code on the fly.",
+      "channels": {
+        "master": {
+          "version": "1.3.0",
+          "released": "2015-05-14",
+          "default": true,
+          "files": [
+            {
+              "name": ".lua",
+              "url": "@{fileBaseUrl}@{fileName}",
+              "sha1": "85CB97F6616707F87B69866B937F3242465BFFAC"
+            }
+          ],
+          "requiredModules": [
+            {
+              "moduleName": "lyger.LibLyger",
+              "name": "LibLyger",
+              "url": "@{baseUrl}",
+              "version": "2.0.0"
+            },
+            {
+              "moduleName": "aegisub.util"
+            }
+          ]
+        }
+      },
+      "changelog": {
+        "1.3.0": [
+          "Added DependencyControl"
+        ]
+      }
+    },
+    "lyger.ModifyMocha": {
+      "url": "@{baseUrl}#@{namespace}",
+      "author": "lyger",
+      "name": "Mass modify mocha lines",
+      "description": "Allows you to quickly change the appearance of mocha tracked lines without reapplying motion data.",
+      "channels": {
+        "master": {
+          "version": "0.2.0",
+          "released": "2015-05-14",
+          "default": true,
+          "files": [
+            {
+              "name": ".lua",
+              "url": "@{fileBaseUrl}@{fileName}",
+              "sha1": "036C74821E9096DC1870B4C9573FBB0E72F210A7"
+            }
+          ],
+          "requiredModules": [
+            {
+              "moduleName": "lyger.LibLyger",
+              "name": "LibLyger",
+              "url": "@{baseUrl}",
+              "version": "2.0.0"
+            },
+            {
+              "moduleName": "aegisub.util"
+            }
+          ]
+        }
+      },
+      "changelog": {
+        "0.2.0": [
+          "Added DependencyControl"
+        ]
+      }
+    },
+    "lyger.MoveClip": {
+      "url": "@{baseUrl}#@{namespace}",
+      "author": "lyger",
+      "name": "Move with clip",
+      "description": "Moves both position and rectangular clip.",
+      "channels": {
+        "master": {
+          "version": "1.2.0",
+          "released": "2015-05-14",
+          "default": true,
+          "files": [
+            {
+              "name": ".lua",
+              "url": "@{fileBaseUrl}@{fileName}",
+              "sha1": "9B58CFA2DCFAC291C9B2A1D2222B35D33D7B9A57"
+            }
+          ],
+          "requiredModules": [
+            {
+              "moduleName": "lyger.LibLyger",
+              "name": "LibLyger",
+              "url": "@{baseUrl}",
+              "version": "2.0.0"
+            }
+          ]
+        }
+      },
+      "changelog": {
+        "1.2.0": [
+          "Added DependencyControl"
+        ]
+      }
+    },
+    "lyger.SemiColorCalc": {
+      "url": "@{baseUrl}#@{namespace}",
+      "author": "lyger",
+      "name": "Semitransparent color calculator",
+      "description": "Input a target and background color to calculate the original color.",
+      "channels": {
+        "master": {
+          "version": "1.1.0",
+          "released": "2015-05-14",
+          "default": true,
+          "files": [
+            {
+              "name": ".lua",
+              "url": "@{fileBaseUrl}@{fileName}",
+              "sha1": "489688F4931440B2C45C50B3532F0E57916E3478"
+            }
+          ],
+          "requiredModules": [
+            {
+              "moduleName": "aegisub.util"
+            }
+          ]
+        }
+      },
+      "changelog": {
+        "1.1.0": [
+          "Added DependencyControl"
+        ]
+      }
+    },
+    "lyger.TemplateManager": {
+      "url": "@{baseUrl}#@{namespace}",
+      "author": "lyger",
+      "name": "Template Manager",
+      "description": "Manage typsetting templates.",
+      "channels": {
+        "master": {
+          "version": "2.1.0",
+          "released": "2015-05-14",
+          "default": true,
+          "files": [
+            {
+              "name": ".lua",
+              "url": "@{fileBaseUrl}@{fileName}",
+              "sha1": "B2F944E3A69A61ED51789A8509737C21F490F5D6"
+            }
+          ],
+          "requiredModules": [
+            {
+              "moduleName": "l0.ASSFoundation.Common",
+              "name": "ASSFoundation (Common)",
+              "url": "https://github.com/TypesettingTools/ASSFoundation",
+              "version": "0.2.0",
+              "feed": "@{feed:ASSFoundation}"
+            },
+            {
+              "moduleName": "aegisub.util"
+            },
+            {
+              "moduleName": "karaskel"
+            }
+          ]
+        }
+      },
+      "changelog": {
+        "2.1.0": [
+          "Added DependencyControl"
+        ]
+      }
+    },
+    "lyger.VecClipGradient": {
+      "url": "@{baseUrl}#@{namespace}",
+      "author": "lyger",
+      "name": "Vector-Clip Gradient",
+      "description": "Intersects the rectangular clips on a gradient with a specified vector clip.",
+      "channels": {
+        "master": {
+          "version": "1.1.0",
+          "released": "2015-05-14",
+          "default": true,
+          "files": [
+            {
+              "name": ".lua",
+              "url": "@{fileBaseUrl}@{fileName}",
+              "sha1": "1FB0B5B99C0E40B5493FC93D392623EDE0FF9404"
+            }
+          ],
+          "requiredModules": [
+            {
+              "moduleName": "aegisub.util"
+            }
+          ]
+        }
+      },
+      "changelog": {
+        "1.1.0": [
+          "Added DependencyControl"
+        ]
+      }
+    }
+  },
+  "modules": {
+    "lyger.LibLyger": {
+      "url": "@{baseUrl}",
+      "author": "lyger",
+      "name": "LibLyger",
+      "description": "Library of commonly used functions across all of lyger's automation scripts.",
+      "fileBaseUrl": "https://raw.githubusercontent.com/TypesettingTools/lyger-Aegisub-Scripts/@{channel}/modules/@{scriptName}/",
+      "channels": {
+        "master": {
+          "version": "2.0.0",
+          "released": "2015-05-14",
+          "default": true,
+          "files": [
+            {
+              "name": ".moon",
+              "url": "@{fileBaseUrl}@{fileName}",
+              "sha1": "C0CFE6C39917B11DABDBCD987EE9FFA16413FD99"
+            }
+          ],
+          "requiredModules": [
+            {
+              "moduleName": "aegisub.util"
+            },
+            {
+              "moduleName": "karaskel"
+            }
+          ]
+        }
+      },
+      "changelog": {
+        "2.0.0": [
+          "Added DependencyControl",
+          "LibLyger is now a Lua module",
+          "A LibLyger instance now acts as a partial/lightweight wrapper for the subtitle interface to centralize karaskel-related tasks.",
+          "Some shared functions (time_exclude, make_state_table, interpolate and match_splits) were moved into LibLyger."
+        ]
+      }
+    }
+  }
+}
