@@ -302,20 +302,21 @@ function lua_interpret(sub,sel)
 	end
 	
 	--Load presets or create if none
-	presets=table_from_file(config_path)
-	if presets==nil then
-		presets={["Example - Duplicate and Blur"]=
-				"if i%2==1 then\n"..
-				"\tduplicate()\n"..
-				"\tmodify(\"bord\",replace(0))\n"..
-				"\tif state[\"blur\"]==0 then modify(\"blur\",replace(0.6)) end\n"..
-				"\tmodify_line(\"layer\",add(1))\n"..
-				"\tremove(\"3c\",\"3a\",\"shad\")\n"..
-				"else\n"..
-				"\tmodify(\"c\",replace(get(\"3c\")))\n"..
-				"\tmodify(\"1a\",replace(get(\"3a\")))\n"..
-				"\tif state[\"blur\"]==0 then modify(\"blur\",replace(0.6)) end\n"..
-				"end"}
+	local presets = table_from_file(config_path)
+	if not presets then
+		presets={["Example - Duplicate and Blur"] = [[
+	if i%2 == 1 then
+		duplicate()
+		modify("bord", replace(0))
+		if state.blur == 0 then modify("blur", replace(0.6)) end
+		modify_line("layer",add(1))
+		remove("3c", "3a", "shad")
+	else
+		modify("c", replace(get("3c")))
+		modify("1a", replace(get("3a")))
+		if state.blur == 0 then modify("blur", replace(0.6)) end
+	end]]}
+
 		table_to_file(config_path,presets)
 	end
 	
