@@ -98,7 +98,7 @@ probably also break in other cases I haven't tested.
 
 script_name = "Duplicate and Blur"
 script_description = "Splits a bordered line into two layers, so both text and outline have blur."
-script_version = "1.0.0"
+script_version = "1.1.0"
 script_author = "lyger"
 script_namespace = "lyger.BorderSplit"
 
@@ -106,7 +106,7 @@ local DependencyControl = require("l0.DependencyControl")
 local rec = DependencyControl{
 	feed = "https://raw.githubusercontent.com/TypesettingTools/lyger-Aegisub-Scripts/master/DependencyControl.json",
 	{
-		{"lyger.libLyger", version = "2.0.0", url = "http://github.com/TypesettingTools/lyger-Aegisub-Scripts"},
+		{"lyger.LibLyger", version = "2.0.0", url = "http://github.com/TypesettingTools/lyger-Aegisub-Scripts"},
 		"aegisub.util"
 	}
 }

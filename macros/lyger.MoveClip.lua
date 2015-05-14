@@ -13,7 +13,7 @@ to be present in selected line(s) in order to work.
 
 script_name = "Move with clip"
 script_description = "Moves both position and rectangular clip."
-script_version = "1.1.0"
+script_version = "1.2.0"
 script_author = "lyger"
 script_namespace = "lyger.MoveClip"
 
@@ -21,7 +21,7 @@ local DependencyControl = require("l0.DependencyControl")
 local rec = DependencyControl{
 	feed = "https://raw.githubusercontent.com/TypesettingTools/lyger-Aegisub-Scripts/master/DependencyControl.json",
 	{
-		{"lyger.libLyger", version = "2.0.0", url = "http://github.com/TypesettingTools/lyger-Aegisub-Scripts"}
+		{"lyger.LibLyger", version = "2.0.0", url = "http://github.com/TypesettingTools/lyger-Aegisub-Scripts"}
 	}
 }
 local LibLyger = rec:requireModules()

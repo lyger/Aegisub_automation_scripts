@@ -29,7 +29,7 @@ headache keeping track of them all.
 
 script_name = "Mass modify mocha lines"
 script_description = "Allows you to quickly change the appearance of mocha tracked lines without reapplying motion data."
-script_version = "0.1.1"
+script_version = "0.2.0"
 script_author = "lyger"
 script_namespace = "lyger.ModifyMocha"
 
@@ -37,7 +37,7 @@ local DependencyControl = require("l0.DependencyControl")
 local rec = DependencyControl{
 	feed = "https://raw.githubusercontent.com/TypesettingTools/lyger-Aegisub-Scripts/master/DependencyControl.json",
 	{
-		{"lyger.libLyger", version = "2.0.0", url = "http://github.com/TypesettingTools/lyger-Aegisub-Scripts"},
+		{"lyger.LibLyger", version = "2.0.0", url = "http://github.com/TypesettingTools/lyger-Aegisub-Scripts"},
 		"aegisub.util"
 	}
 }

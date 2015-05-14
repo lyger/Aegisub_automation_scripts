@@ -15,7 +15,7 @@ yeah, in essence this automation is redundant.
 
 script_name = "Vector-Clip Gradient"
 script_description = "Intersects the rectangular clips on a gradient with a specified vector clip."
-script_version = "1.0.0"
+script_version = "1.1.0"
 script_author = "lyger"
 script_namespace = "lyger.VecClipGradient"
 

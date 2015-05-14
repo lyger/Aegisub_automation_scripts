@@ -15,7 +15,7 @@ Check which colors to apply to, and the script does the rest.
 
 script_name = "Semitransparent color calculator"
 script_description = "Input a target and background color to calculate the original color."
-script_version = "1.0.0"
+script_version = "1.1.0"
 script_author = "lyger"
 script_namespace = "lyger.SemiColorCalc"
 

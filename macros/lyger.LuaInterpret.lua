@@ -178,7 +178,7 @@ flags
 
 script_name = "Lua Interpreter"
 script_description = "Run Lua code on the fly."
-script_version = "1.2.2"
+script_version = "1.3.0"
 script_author = "lyger"
 script_namespace = "lyger.LuaInterpret"
 
@@ -186,7 +186,7 @@ local DependencyControl = require("l0.DependencyControl")
 local rec = DependencyControl{
 	feed = "https://raw.githubusercontent.com/TypesettingTools/lyger-Aegisub-Scripts/master/DependencyControl.json",
 	{
-		{"lyger.libLyger", version = "2.0.0", url = "http://github.com/TypesettingTools/lyger-Aegisub-Scripts"},
+		{"lyger.LibLyger", version = "2.0.0", url = "http://github.com/TypesettingTools/lyger-Aegisub-Scripts"},
 		"aegisub.util"
 	}
 }

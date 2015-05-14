@@ -23,7 +23,7 @@ interfere with the gradient. The same goes for shadow.
 
 script_name = "Gradient along clip edge"
 script_description = "Color gradient along clip edge. Solid alpha only."
-script_version = "0.1.4"
+script_version = "0.2.0"
 script_author = "lyger"
 script_namespace = "lyger.ClipGrad"
 
@@ -31,7 +31,7 @@ local DependencyControl = require("l0.DependencyControl")
 local rec = DependencyControl{
 	feed = "https://raw.githubusercontent.com/TypesettingTools/lyger-Aegisub-Scripts/master/DependencyControl.json",
 	{
-		{"lyger.libLyger", version = "2.0.0", url = "http://github.com/TypesettingTools/lyger-Aegisub-Scripts"},
+		{"lyger.LibLyger", version = "2.0.0", url = "http://github.com/TypesettingTools/lyger-Aegisub-Scripts"},
 		"aegisub.util"
 	}
 }

@@ -131,7 +131,7 @@ TODO:
 
 script_name = "Template Manager"
 script_description = "Manage typsetting templates."
-script_version = "2.0.0"
+script_version = "2.1.0"
 script_author = "lyger"
 script_namespace = "lyger.TemplateManager"
 

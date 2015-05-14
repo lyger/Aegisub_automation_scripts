@@ -44,7 +44,7 @@ Supports \move but you are strongly advised NOT to use it.
 
 script_name = "Image to .ass"
 script_description = "Converts bitmap image to .ass lines."
-script_version = "2.2.0"
+script_version = "2.3.0"
 script_author = "lyger"
 script_namespace = "lyger.Image2ASS"
 

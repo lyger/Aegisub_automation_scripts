@@ -57,7 +57,7 @@ TODO: Debug, debug, and keep debugging
 
 export script_name = "Gradient Everything"
 export script_description = "This will gradient everything."
-export script_version = "1.0.2"
+export script_version = "2.0.0"
 export script_namespace = "lyger.GradientEverything"
 
 DependencyControl = require "l0.DependencyControl"

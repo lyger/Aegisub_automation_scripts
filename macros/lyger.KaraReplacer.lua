@@ -1,6 +1,6 @@
 script_name = "Karaoke replacer"
 script_description = "Replaces the syllables of a verse."
-script_version = "0.2.1"
+script_version = "0.3.0"
 script_author = "lyger"
 script_namespace = "lyger.KaraReplacer"
 

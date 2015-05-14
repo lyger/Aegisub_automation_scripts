@@ -79,7 +79,7 @@ iclip support
 
 export script_name = "Frame-by-frame transform"
 export script_description = "Smoothly transforms between the first and last selected lines."
-export script_version = "1.1.0"
+export script_version = "2.0.0"
 export script_namespace = "lyger.FbfTransform"
 
 DependencyControl = require "l0.DependencyControl"

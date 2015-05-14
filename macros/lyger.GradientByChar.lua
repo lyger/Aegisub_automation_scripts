@@ -18,7 +18,7 @@ convenience above all, so it runs with a single button press and no time-consumi
 
 script_name = "Gradient by character"
 script_description = "Smoothly transforms tags across your line, by character."
-script_version = "1.2.1"
+script_version = "1.3.0"
 script_author = "lyger"
 script_namespace = "lyger.GradientByChar"
 
@@ -26,7 +26,7 @@ local DependencyControl = require("l0.DependencyControl")
 local rec = DependencyControl{
 	feed = "https://raw.githubusercontent.com/TypesettingTools/lyger-Aegisub-Scripts/master/DependencyControl.json",
 	{
-		{"lyger.libLyger", version = "2.0.0", url = "http://github.com/TypesettingTools/lyger-Aegisub-Scripts"},
+		{"lyger.LibLyger", version = "2.0.0", url = "http://github.com/TypesettingTools/lyger-Aegisub-Scripts"},
 		"aegisub.util", "aegisub.re"
 	}
 }

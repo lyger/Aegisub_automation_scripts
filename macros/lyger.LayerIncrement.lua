@@ -9,7 +9,7 @@ Basic utility that will make selected lines have increasing or decreasing layer 
 
 script_name = "Layer increment"
 script_description = "Makes increasing or decreasing layer numbers."
-script_version = "1.0.0"
+script_version = "1.1.0"
 script_author = "lyger"
 script_namespace = "lyger.LayerIncrement"
 
