@@ -13,11 +13,11 @@ yeah, in essence this automation is redundant.
 
 ]]--
 
-script_name = "Clip Gradient"
-script_description = "Clips a gradient."
+script_name = "Vector-Clip Gradient"
+script_description = "Intersects the rectangular clips on a gradient with a specified vector clip."
 script_version = "1.0.0"
 script_author = "lyger"
-script_namespace = "lyger.ClipGradient"
+script_namespace = "lyger.VecClipGradient"
 
 local DependencyControl = require("l0.DependencyControl")
 local rec = DependencyControl{
