@@ -29,10 +29,10 @@ script_namespace = "lyger.ClipGrad"
 
 local DependencyControl = require("l0.DependencyControl")
 local rec = DependencyControl{
-    feed = "https://raw.githubusercontent.com/TypesettingTools/lyger-Aegisub-Scripts/master/DependencyControl.json",
-    {
-        {"lyger.libLyger", version = "2.0.0", url = "http://github.com/TypesettingTools/lyger-Aegisub-Scripts"},
-    	"aegisub.util"
+	feed = "https://raw.githubusercontent.com/TypesettingTools/lyger-Aegisub-Scripts/master/DependencyControl.json",
+	{
+		{"lyger.libLyger", version = "2.0.0", url = "http://github.com/TypesettingTools/lyger-Aegisub-Scripts"},
+		"aegisub.util"
 	}
 }
 local LibLyger, util = rec:requireModules()
@@ -272,7 +272,7 @@ function grad_clip(sub,sel)
 		--Reference line to grab default gradient colors from
 		local refline = libLyger.lines[sel[1]]
 		local refc1, refc2, refc3, refc4 = get_color_dlg(refline, 1), get_color_dlg(refline, 2),
-		                                   get_color_dlg(refline, 3), get_color_dlg(refline, 4)
+										   get_color_dlg(refline, 3), get_color_dlg(refline, 4)
 
 		--GUI config
 		gconfig =

@@ -26,10 +26,10 @@ script_namespace = "lyger.ClipBlur"
 
 local DependencyControl = require("l0.DependencyControl")
 local rec = DependencyControl{
-    feed = "https://raw.githubusercontent.com/TypesettingTools/lyger-Aegisub-Scripts/master/DependencyControl.json",
-    {
-    	{"lyger.libLyger", version = "2.0.0", url = "http://github.com/TypesettingTools/lyger-Aegisub-Scripts"},
-    	"aegisub.util"
+	feed = "https://raw.githubusercontent.com/TypesettingTools/lyger-Aegisub-Scripts/master/DependencyControl.json",
+	{
+		{"lyger.libLyger", version = "2.0.0", url = "http://github.com/TypesettingTools/lyger-Aegisub-Scripts"},
+		"aegisub.util"
 	}
 }
 local LibLyger, util = rec:requireModules()

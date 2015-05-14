@@ -21,8 +21,8 @@ script_namespace = "lyger.VecClipGradient"
 
 local DependencyControl = require("l0.DependencyControl")
 local rec = DependencyControl{
-    feed = "https://raw.githubusercontent.com/TypesettingTools/lyger-Aegisub-Scripts/master/DependencyControl.json",
-    {"aegisub.util"}
+	feed = "https://raw.githubusercontent.com/TypesettingTools/lyger-Aegisub-Scripts/master/DependencyControl.json",
+	{"aegisub.util"}
 }
 local util = rec:requireModules()
 

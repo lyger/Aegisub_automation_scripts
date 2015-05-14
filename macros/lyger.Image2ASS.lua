@@ -4,7 +4,7 @@ README:
 ***ALSO REQUIRES(1) CONVERT.EXE STANDALONE FROM IMAGEMAGICK***
 
 (1) Only if you want to use non-bitmap images or the resize capability.
-    Save the binary to your Aegisub\automation\autoload directory:
+	Save the binary to your Aegisub\automation\autoload directory:
 	http://www.mediafire.com/download/zdxn75nte1n6cq6/convert.exe
 
 
@@ -50,8 +50,8 @@ script_namespace = "lyger.Image2ASS"
 
 local DependencyControl = require("l0.DependencyControl")
 local rec = DependencyControl{
-    feed = "https://raw.githubusercontent.com/TypesettingTools/lyger-Aegisub-Scripts/master/DependencyControl.json",
-    { "aegisub.util", "ffi" }
+	feed = "https://raw.githubusercontent.com/TypesettingTools/lyger-Aegisub-Scripts/master/DependencyControl.json",
+	{ "aegisub.util", "ffi" }
 }
 local util, ffi = rec:requireModules()
 

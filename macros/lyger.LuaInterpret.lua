@@ -33,18 +33,18 @@ mod(tag,method)
 	tag (property) that you want to modify. method is a function that
 	dictates how the modification is done. For example, to double the
 	font size, do:
-	
+
 	modify("fs",multiply(2))
-	
+
 	mod is an alias for modify, which you can use to save typing.
 
 modify_line(property, method)
 modln(propery,method)
 	Works like modify(), but acts on line properties, not override tags.
 	For example, to modify the layer of a line:
-	
+
 	modify_line("layer",add(1))
-	
+
 	For a list of line properties that can be modified, see:
 	http://docs.aegisub.org/3.0/Automation/Lua/Modules/karaskel.lua/#index12h3
 
@@ -53,46 +53,46 @@ add(...)
 	parameters. For example, to expand a rectangular clip by 10 pixels on
 	all sides, assuming the first two coordinates represent top left and
 	the last two coordinates represent bottom right, do:
-	
+
 	modify("clip",add(-10,-10,10,10))
-	
+
 	This will add -10, -10, 10, and 10, in that order, to the four
 	parameters of \clip. There is no subtract() function; simply add a
 	negative number to subtract.
-	
+
 multiply(...)
 mul(...)
 	Works like add(). There is no divide() function. Simply multiply by
 	a decimal or a fraction. Example:
-	
+
 	modify("fscx",multiply(0.5))
 
 replace(x)
 rep(x)
 	Returns a function that returns x. When used inside modify(), this
 	will effectively replace the original parameter of the tag with x.
-	
+
 	modify("fn",replace("Comic Sans MS"))
 
 append(x)
 app(x)
 	Returns a function that appends x to the parameter. For example:
-	
+
 	modify_line("actor",append(" the great"))
-	
+
 	I'm not sure why I wrote this function either. Completeness' sake,
 	perhaps.
 
 get(tag)
 	Returns the parameter of the tag. If the tag has multiple parameters,
 	they are returned as a table. Example:
-	
+
 	main_color=get("c")
 
 remove(...)
 rem(...)
 	Removes all the tags listed. Example:
-	
+
 	remove("bord","shad")
 
 select()
@@ -107,18 +107,18 @@ duplicate()
 	duplicated, then the duplicate of the duplicate will be duplicated,
 	and you end up in an infinite loop. I suggest you use the function
 	like this:
-	
+
 	if i%2==1 then
 		duplicate()
-		
+
 		--Code to run on the original line
-		
+
 	else
-	
+
 		--Code to run on the duplicate line
-	
+
 	end
-	
+
 	Note that "once per line" functions such as duplicate() are run at
 	the end of the rest of the execution, but before changes are saved.
 	In other words, duplicate() will always create a line that looks like
@@ -151,9 +151,9 @@ j
 state
 	This is a table containing the current state of the line, indexed by
 	tag name. For example, to find out what the current x scaling is, use:
-	
+
 	state["fscx"]
-	
+
 	This table automatically updates when your code modifies properties
 	of the line. To see the state of the untouched line, use the variable
 	dstate (for default state).
@@ -184,11 +184,11 @@ script_namespace = "lyger.LuaInterpret"
 
 local DependencyControl = require("l0.DependencyControl")
 local rec = DependencyControl{
-    feed = "https://raw.githubusercontent.com/TypesettingTools/lyger-Aegisub-Scripts/master/DependencyControl.json",
-    {
+	feed = "https://raw.githubusercontent.com/TypesettingTools/lyger-Aegisub-Scripts/master/DependencyControl.json",
+	{
 		{"lyger.libLyger", version = "2.0.0", url = "http://github.com/TypesettingTools/lyger-Aegisub-Scripts"},
 		"aegisub.util"
-    }
+	}
 }
 
 local LibLyger, util = rec:requireModules()
@@ -236,12 +236,12 @@ function add(...) -- exposed to script
 	return function(...)
 		local y, z = table.pack(...), {}
 		for i=1, #y do
-				y[i]=tonumber(y[i]) or 0
-				x[i]=tonumber(x[i]) or 0
-				z[i]=y[i]+x[i]
-			end
-			return unpack(z)
+			y[i]=tonumber(y[i]) or 0
+			x[i]=tonumber(x[i]) or 0
+			z[i]=y[i]+x[i]
 		end
+		return unpack(z)
+	end
 end
 
 --Returns a function that multiplies by each number
@@ -250,12 +250,12 @@ function multiply(...) -- exposed to script
 	return function(...)
 		local y, z = table.pack(...), {}
 		for i=1, #y do
-				y[i]=tonumber(y[i]) or 0
-				x[i]=tonumber(x[i]) or 0
-				z[i]=y[i]*x[i]
-			end
-			return unpack(z)
+			y[i]=tonumber(y[i]) or 0
+			x[i]=tonumber(x[i]) or 0
+			z[i]=y[i]*x[i]
 		end
+		return unpack(z)
+	end
 end
 
 --Returns a function that replaces with x
@@ -294,13 +294,13 @@ end
 function lua_interpret(sub,sel)
 	make_conf()
 	libLyger:set_sub(sub, sel)
-	
+
 	--Copies old data over in the case of first run after upgrade
 	local oldpresets=table_from_file(old_config_path)
 	if oldpresets then
 		table_to_file(config_path,oldpresets)
 	end
-	
+
 	--Load presets or create if none
 	local presets = table_from_file(config_path)
 	if not presets then
@@ -319,7 +319,7 @@ function lua_interpret(sub,sel)
 
 		table_to_file(config_path,presets)
 	end
-	
+
 	--Components of the dialog
 	local preselector = {
 			class="dropdown",items={},
@@ -331,9 +331,9 @@ function lua_interpret(sub,sel)
 			name="new_prename",
 			x=20,y=7,width=20,height=1
 		}
-	
+
 	dialog_conf[3], dialog_conf[4] = preselector, prenamer
-	
+
 	local function make_name_list()
 		preselector.items = {}
 		local maxnew, p = 0, 1
@@ -346,15 +346,15 @@ function lua_interpret(sub,sel)
 		table.sort(preselector.items)
 		prenamer.value=string.format("New preset %d",maxnew+1)
 	end
-	
+
 	make_name_list()
-	
+
 	--Show GUI
 	local pressed, results
 	repeat
 		pressed,results=aegisub.dialog.display(dialog_conf,
 			{"Run","Load","Save","Delete","Cancel"})
-		
+
 		if pressed=="Cancel" then aegisub.cancel() end
 		if pressed=="Load" then
 			textbox.value=presets[results["pre_sel"]]
@@ -376,19 +376,19 @@ function lua_interpret(sub,sel)
 			table_to_file(config_path,presets)
 			preselector.value=nil
 		end
-		
+
 	until pressed=="Run"
-	
+
 	local command, new_sel = results["code"], {}
-	
+
 	--Run for all lines in selection. Hard limit of 9001 just in case
 	i, flags = 1, {} -- exposed to script
 	while i<=#sel and #sel<=9001 do
 		local li=sel[i]
 		local line, line_table = libLyger.lines[li], {}
-		
+
 		aegisub.progress.set(100*i/#sel)
-		
+
 		--Alias maxi to the size of the selection
 		maxi = #sel -- exposed to script
 		--Break the line into a table
@@ -403,10 +403,10 @@ function lua_interpret(sub,sel)
 			j=j+1
 		end
 		line.text=line.text:gsub("}\t","}")
-		
+
 		--These functions are run at the end, at most once per line
 		local tasklist = {}
-		
+
 		--Function to select line
 		local function _select()
 			tasklist[#tasklist+1] = function()
@@ -414,34 +414,34 @@ function lua_interpret(sub,sel)
 				selected = true  -- exposed to script
 			end
 		end
-		
+
 		--Function to duplicate lines
 		local function _duplicate()
 			table.insert(tasklist,1,function()
-					table.insert(sel,i+1,li+1)
+				table.insert(sel,i+1,li+1)
 				libLyger:insert_line(util.copy(line), li+1)
 				for x = i+2, #sel do
 					sel[x] = sel[x]+1
-					end
+				end
 
 				for x = 1, #new_sel do
 					if new_sel[x] > li+1 then
 						new_sel[x] = new_sel[x] + 1
-							end
-						end
+					end
+				end
 
 				duplicated = true -- exposed to script
-					flags["duplicate"]=true
-				end)
+				flags["duplicate"]=true
+			end)
 		end
-		
+
 		--Function to modify line properties
 		local function _modify_line(prop,func)
 			table.insert(tasklist, function()
-					line[prop]=func(line[prop])
-				end)
+				line[prop]=func(line[prop])
+			end)
 		end
-		
+
 		--Create state table
 		local state_table = {}
 		for j,a in ipairs(line_table) do
@@ -460,16 +460,16 @@ function lua_interpret(sub,sel)
 				end
 			end
 		end
-		
+
 		--Create default state and current state
 		state = libLyger:style_lookup(line) -- exposed to script
-	 	dstate = util.copy(state) -- exposed to script
-			
+		dstate = util.copy(state) -- exposed to script
+
 		--Define position and origin objects
 		pos, org = {}, {} -- exposed to script
 		pos.x,pos.y=libLyger:get_pos(line)
 		org.x,org.y=libLyger:get_org(line)
-		
+
 		--Now cycle through all tag-text pairs
 		for j,a in ipairs(line_table) do
 			local fenv = getfenv(1)
@@ -477,7 +477,7 @@ function lua_interpret(sub,sel)
 			fenv.line=line
 			fenv.flags=flags
 			fenv.maxj=#line_table
-			
+
 			--Wrappers for the once-per-line functions
 			fenv.duplicate = function()
 				if j==1 then _duplicate() end
@@ -488,18 +488,18 @@ function lua_interpret(sub,sel)
 			fenv.modify_line = function(prop,func)
 				if j==1 then _modify_line(prop,func) end
 			end
-			
+
 			local first = j==1
-			
+
 			--Define variables
 			text, tag = a.text, a.tag -- exposed to script
-			
+
 			--Update state
 			for tag, param in pairs(state_table[j]) do
 				state[tag]= param
 				dstate[tag]= param
 			end
-			
+
 			--Get the parameter of the given tag
 			fenv.get = function(b)
 				local param = tostring(dstate[b])
@@ -512,12 +512,12 @@ function lua_interpret(sub,sel)
 				end
 				return param
 			end
-			
+
 			--Modify the given tag
 			fenv.modify = function(b,func)
 				--Make sure once-per-lines are only modified once
 				if opl[b] and j~=1 then return end
-				
+
 				local c, d = {get(b)}
 				if #c==1 then c=c[1] end
 				if type(c)=="table" then
@@ -547,22 +547,22 @@ function lua_interpret(sub,sel)
 					state[b]=d
 				end
 			end
-			
+
 			--Remove the given tags
 			fenv.remove = function(...)
 				tag = LibLyger.line_exclude(tag, table.pack(...))
 			end
-			
+
 			--Insert the given tag at the end
 			fenv.insert = function(b)
 				tag=tag:gsub("}$",b.."}")
 			end
-			
+
 			--Select every
 			fenv.isel = function(n)
 				if i%n==1 then select() end
 			end
-			
+
 			--Aliases for common functions
 			fenv.mod=modify
 			fenv.mul=multiply
@@ -570,32 +570,32 @@ function lua_interpret(sub,sel)
 			fenv.app=append
 			fenv.modln=modify_line
 			fenv.rem=fenv.remove
-			
+
 			--Run the user's code
 			local com, err = loadstring(command)
-			
+
 			if err then
 				aegisub.log(err)
 				aegisub.cancel()
 			end
-			
+
 			setfenv(com, fenv)()
-			
+
 			a.text=text
 			a.tag=tag
 		end
-		
+
 		for _,task in ipairs(tasklist) do
 			task()
 		end
-		
+
 		--Rebuild
 		local rebuilt_text = {}
 		for r, a in ipairs(line_table) do
 			rebuilt_text[r*2-1], rebuilt_text[r*2] = a.tag, a.text
 		end
 		line.text = table.concat(rebuilt_text):gsub("{}","")
-		
+
 		--Update position and org
 		local px, py = libLyger:get_pos(line)
 		if px ~= pos.x or py ~= pos.y then
@@ -614,20 +614,20 @@ function lua_interpret(sub,sel)
 			if num < 1 and (ox ~= pos.x or oy ~= pos.y) then
 				line.text = line.text:gsub("{", "{"..esc(otag), 1) end
 		end
-		
+
 		--Reinsert
 		sub[li]=line
-		
+
 		--Increment
 		i=i+1
 	end
-	
+
 	aegisub.set_undo_point(script_name)
-	
+
 	--Return new selection or old selection
 	if #new_sel>0 then return new_sel end
 	return sel
-	
+
 end
 
 rec:registerMacro(lua_interpret)

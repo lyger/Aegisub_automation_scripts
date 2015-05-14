@@ -6,7 +6,7 @@ script_namespace = "lyger.KaraReplacer"
 
 local DependencyControl = require("l0.DependencyControl")
 local rec = DependencyControl{
-    feed = "https://raw.githubusercontent.com/TypesettingTools/lyger-Aegisub-Scripts/master/DependencyControl.json"
+	feed = "https://raw.githubusercontent.com/TypesettingTools/lyger-Aegisub-Scripts/master/DependencyControl.json"
 }
 
 --Fuck it, I should comment this code. Her goes

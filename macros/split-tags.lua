@@ -11,9 +11,9 @@ line for each block of tags, with the appropriate position and appearance. For e
 
 would get split into
 
-{\pos(x1,y1)\c&H0000FF&}This 
-{\pos(x2,y2)\c&H0000DD&}is 
-{\pos(x3,y3)\c&H0000BB&}a 
+{\pos(x1,y1)\c&H0000FF&}This
+{\pos(x2,y2)\c&H0000DD&}is
+{\pos(x3,y3)\c&H0000BB&}a
 {\pos(x4,y4)\c&H000099&}test
 
 In theory, after running this script, the appearance of the typeset will be exactly the same, but
@@ -171,12 +171,12 @@ local function full_state_subtable(tag)
 	for ttag in tag:gmatch("\\t%b()") do
 		table.insert(time_tags,ttag)
 	end
-	
+
 	--Remove time tags from the string so we don't have to deal with them
 	tag=tag:gsub("\\t%b()","")
-	
+
 	state_subtable={}
-	
+
 	for t in tag:gmatch("\\[^\\{}]*") do
 		ttag,tparam="",""
 		if t:match("\\fn")~=nil then
@@ -186,67 +186,67 @@ local function full_state_subtable(tag)
 		end
 		state_subtable[ttag]=tparam
 	end
-	
+
 	--Dump the time tags back in
 	if #time_tags>0 then
 		state_subtable["t"]=time_tags
 	end
-	
+
 	return state_subtable
 end
 
 local function split_tag(sub,sel)
 	--Read in styles and meta
 	local meta,styles = karaskel.collect_head(sub, false)
-	
+
 	--How far to offset the next line read
 	lines_added=0
-	
+
 	for si,li in ipairs(sel) do
-		
+
 		--Progress report
 		aegisub.progress.task("Processing line "..si.."/"..#sel)
 		aegisub.progress.set(100*si/#sel)
-		
+
 		--Read in the line
 		line=sub[li+lines_added]
-		
+
 		--Comment it out
 		line.comment=true
 		sub[li+lines_added]=line
 		line.comment=false
-		
+
 		--Preprocess
 		karaskel.preproc_line(sub,meta,styles,line)
-		
+
 		--Get position and origin
 		px,py=get_pos(line)
 		ox,oy=get_org(line)
-		
+
 		--If there are rotations in the line, then write the origin
 		do_org=false
-		
+
 		if line.text:match("\\fr[xyz]")~=nil then do_org=true end
-		
+
 		--Turn all \Ns into the newline character
 		--line.text=line.text:gsub("\\N","\n")
-		
+
 		--Make sure any newline followed by a non-newline character has a tag afterwards
 		--(i.e. force breaks at newlines)
 		--line.text=line.text:gsub("\n([^\n{])","\n{}%1")
-		
+
 		--Make line table
 		line_table={}
 		for thistag,thistext in line.text:gmatch("({[^{}]*})([^{}]*)") do
 			table.insert(line_table,{tag=thistag,text=thistext})
 		end
-		
+
 		--Stores current state of the line as style table
 		current_style=deep_copy(line.styleref)
-		
+
 		--Stores the width of each section
 		substr_data={}
-		
+
 		--Total width of the line
 		cum_width=0
 		--Total height of the line
@@ -254,13 +254,13 @@ local function split_tag(sub,sel)
 		--Stores the various cumulative widths for each linebreak
 		--subs_width={}
 		--subs_index=1
-		
+
 		--First pass to collect size data
 		for i,val in ipairs(line_table) do
-			
+
 			--Create state subtable
 			subtable=full_state_subtable(val.tag)
-			
+
 			--Fix style tables to reflect override tags
 			current_style.fontname=subtable["fn"] or current_style.fontname
 			current_style.fontsize=tonumber(subtable["fs"]) or current_style.fontsize
@@ -285,72 +285,72 @@ local function split_tag(sub,sel)
 				end
 				current_style.align=valign+halign
 			end
-			
+
 			--Store this style table
 			val.style=deep_copy(current_style)
-			
+
 			--Get extents of the section. _sdesc is not used
 			--Temporarily remove all newlines first
 			swidth,sheight,_sdesc,sext=aegisub.text_extents(current_style,val.text:gsub("\n",""))
-			
+
 			--aegisub.log("Text: %s\n--w: %.3f\n--h: %.3f\n--d: %.3f\n--el: %.3f\n\n",
 			--	val.text, swidth, sheight, _sdesc, sext)
-			
+
 			--Add to cumulative width
 			cum_width=cum_width+swidth
-			
+
 			--Total height of the line
 			--theight=0
-			
+
 			--Handle tasks for a line that has a newline
 			--[[if val.text:match("\n")~=nil then
 				--Add sheight for each newline, if any
 				for nl in val.text:gmatch("\n") do
 					theight=theight+sheight
 				end
-				
+
 				--Add the external lead to account for the line of normal text
 				--theight=theight+sext
-				
+
 				--Store the current cumulative width and reset it to zero
 				subs_width[subs_index]=cum_width
 				subs_index=subs_index+1
 				cum_width=0
-				
+
 				--Add to cumulative height
 				cum_height=cum_height+theight
 			else
 				theight=sheight+sext
 			end]]--
-			
+
 			--Add data to data table
 			table.insert(substr_data,
 				{["width"]=swidth,["height"]=theight,["subtable"]=subtable})
-			
+
 		end
-		
+
 		--Store the last cumulative width
 		--subs_width[subs_index]=cum_width
-		
+
 		--Add the last cumulative height
 		--cum_height=cum_height+substr_data[#substr_data].height
-		
+
 		--Stores current state of the line as a state subtable
 		current_subtable={}
 		--[[current_subtable=shallow_copy(substr_data[1].subtable)
 		if current_subtable["t"]~=nil then
 			current_subtable["t"]=shallow_copy(substr_data[1].subtable["t"])
 		end]]
-		
+
 		--How far to offset the x coordinate
 		xoffset=0
-		
+
 		--How far to offset the y coordinate
 		--yoffset=0
-		
+
 		--Newline index
 		--nindex=1
-		
+
 		--Ways of calculating the new x position
 		xpos_func={}
 		--Left aligned
@@ -365,7 +365,7 @@ local function split_tag(sub,sel)
 		xpos_func[0]=function(w)
 				return px-cum_width+xoffset+w
 			end
-		
+
 		--Ways of calculating the new y position
 		--[[ypos_func={}
 		--Bottom aligned
@@ -380,13 +380,13 @@ local function split_tag(sub,sel)
 		ypos_func[3]=function(h)
 				return py+yoffset
 			end]]--
-		
+
 		--Second pass to generate lines
 		for i,val in ipairs(line_table) do
-		
+
 			--Here's where the action happens
 			new_line=shallow_copy(line)
-			
+
 			--Fix state table to reflect current state
 			for tag,param in pairs(substr_data[i].subtable) do
 				if tag=="t" then
@@ -402,24 +402,24 @@ local function split_tag(sub,sel)
 					current_subtable[tag]=param
 				end
 			end
-			
+
 			--Figure out where the new x and y coords should be
 			new_x=xpos_func[current_style.align%3](substr_data[i].width)
 			--new_y=ypos_func[math.ceil(current_style.align/3)](substr_data[i].height)
-			
+
 			--Check if the text ends in whitespace
 			wsp=val.text:gsub("\n",""):match("%s+$")
-			
+
 			--Modify positioning accordingly
 			if wsp~=nil then
 				wsp_width=aegisub.text_extents(val.style,wsp)
 				if current_style.align%3==2 then new_x=new_x-wsp_width/2
 				elseif current_style.align%3==0 then new_x=new_x-wsp_width end
 			end
-			
+
 			--Increase x offset
 			xoffset=xoffset+substr_data[i].width
-			
+
 			--Handle what happens in the line contains newlines
 			--[[if val.text:match("\n")~=nil then
 				--Increase index and reset x offset
@@ -427,15 +427,15 @@ local function split_tag(sub,sel)
 				xoffset=0
 				--Increase y offset
 				yoffset=yoffset+substr_data[i].height
-				
+
 				--Remove the last newline and convert back to \N
 				val.text=val.text:gsub("\n$","")
 				val.text=val.text:gsub("\n","\\N")
 			end]]--
-			
+
 			--Start rebuilding text
 			rebuilt_tag=string.format("{\\pos(%s,%s)}",float2str(new_x),float2str(py))
-			
+
 			--Add the remaining tags
 			for tag,param in pairs(current_subtable) do
 				if tag=="t" then
@@ -446,21 +446,21 @@ local function split_tag(sub,sel)
 					rebuilt_tag=rebuilt_tag:gsub("{","{\\"..tag..param)
 				end
 			end
-			
+
 			if do_org then
 				rebuilt_tag=rebuilt_tag:gsub("{",string.format("{\\org(%s,%s)",float2str(ox),float2str(oy)))
 			end
-			
+
 			new_line.text=rebuilt_tag..val.text
-			
+
 			--Insert the new line
 			sub.insert(li+lines_added+1,new_line)
 			lines_added=lines_added+1
-			
+
 		end
-		
+
 	end
-	
+
 	aegisub.set_undo_point(script_name)
 end
 
