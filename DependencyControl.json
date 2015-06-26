@@ -3,7 +3,7 @@
   "name": "lyger's Automation Scripts",
   "description": "Main repository for all of lyger's automation scripts.",
   "baseUrl": "https://github.com/TypesettingTools/lyger-Aegisub-Scripts",
-  "fileBaseUrl": "https://raw.githubusercontent.com/TypesettingTools/lyger-Aegisub-Scripts/@{channel}/macros/@{namespace}/",
+  "fileBaseUrl": "https://raw.githubusercontent.com/TypesettingTools/lyger-Aegisub-Scripts/@{channel}/macros/@{namespace}",
   "url": "@{baseUrl}",
   "maintainer": "lyger",
   "knownFeeds": {
@@ -655,7 +655,7 @@
       "author": "lyger",
       "name": "LibLyger",
       "description": "Library of commonly used functions across all of lyger's automation scripts.",
-      "fileBaseUrl": "https://raw.githubusercontent.com/TypesettingTools/lyger-Aegisub-Scripts/@{channel}/modules/@{scriptName}/",
+      "fileBaseUrl": "https://raw.githubusercontent.com/TypesettingTools/lyger-Aegisub-Scripts/@{channel}/modules/@{scriptName}",
       "channels": {
         "master": {
           "version": "2.0.0",
@@ -665,7 +665,7 @@
             {
               "name": ".moon",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "C0CFE6C39917B11DABDBCD987EE9FFA16413FD99"
+              "sha1": "C179CD45005608D314E4B8FA4B9F1C40FA391579"
             }
           ],
           "requiredModules": [
