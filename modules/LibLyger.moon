@@ -299,6 +299,7 @@ class LibLyger
             temp_tag = val.tag
             -- Cycle through all the tag blocks and interpolate
             for ctag, param in pairs start_state_table[k]
+                temp_tag = "{}" if #temp_tag == 0
                 temp_tag = temp_tag\gsub "}", ->
                     tval_start, tval_end = start_state_table[k][ctag], end_state_table[k][ctag]
                     tag_type = LibLyger.param_type[ctag]
